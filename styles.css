@@ -1,0 +1,282 @@
+.textplan-view {
+  --textplan-border: var(--background-modifier-border);
+  --textplan-muted: var(--text-muted);
+  --textplan-accent: var(--interactive-accent);
+  /* 尺寸相关的值集中在这里，移动端只需覆盖变量 */
+  --textplan-day-padding: 8px;
+  --textplan-day-number-size: 0.95em;
+  --textplan-todo-size: 0.85em;
+  --textplan-todo-line-height: 1.25;
+  --textplan-todo-gap: 3px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 移动端：更小字号和更紧凑行高，保证日期数字和任务文本完整显示 */
+body.is-mobile .textplan-view,
+body.is-phone .textplan-view {
+  --textplan-day-padding: 5px;
+  --textplan-day-number-size: 0.85em;
+  --textplan-todo-size: 0.75em;
+  --textplan-todo-line-height: 1.2;
+  --textplan-todo-gap: 2px;
+}
+
+.textplan-toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--textplan-border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+/* 工具栏内所有文字统一用 Obsidian 的 UI 字体和默认字号，不自定义大小 */
+.textplan-toolbar {
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-medium);
+}
+
+.textplan-title {
+  color: var(--text-normal);
+  font-size: inherit;
+  font-weight: var(--font-semibold, 600);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.textplan-controls {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.textplan-button,
+.textplan-icon-button {
+  align-items: center;
+  background: var(--background-modifier-hover);
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-normal);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  height: 28px;
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.textplan-icon-button {
+  /* 箭头字形本身偏小，用行高而不是字号补偿，字号仍跟随工具栏 */
+  line-height: 1;
+  padding: 0;
+  width: 28px;
+}
+
+.textplan-button:hover,
+.textplan-icon-button:hover {
+  background: var(--background-modifier-border);
+}
+
+/* 日历始终铺满剩余高度，一屏一个周期，不出现滚动条 */
+.textplan-calendar {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 4px;
+}
+
+/* 月视图：列头 1 行 + 6 个等高周行 */
+.textplan-month-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: auto repeat(6, minmax(0, 1fr));
+}
+
+/* 周视图·横向：列头 1 行 + 1 个占满剩余高度的周行 */
+.textplan-week-horizontal {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+/* 周视图·纵向：7 天等高均分，各占满整行宽度 */
+.textplan-week-vertical {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+}
+
+.textplan-weekday {
+  color: var(--textplan-muted);
+  font-size: var(--textplan-todo-size);
+  font-weight: 600;
+  overflow: hidden;
+  padding: 4px 8px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.textplan-day {
+  align-items: stretch;
+  appearance: none;
+  background: var(--background-primary);
+  border: 1px solid var(--textplan-border);
+  color: var(--text-normal);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--textplan-day-padding);
+  height: 100%;
+  min-height: 0;
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
+.textplan-day:hover {
+  background: var(--background-modifier-hover);
+}
+
+.textplan-day.is-outside-month {
+  color: var(--text-faint);
+}
+
+.textplan-day.is-selected {
+  background: #ede9fe;
+  border-color: #a78bfa;
+}
+
+.textplan-day.is-today .textplan-day-number {
+  align-items: center;
+  background: var(--textplan-accent);
+  border-radius: 999px;
+  color: var(--text-on-accent);
+  display: inline-flex;
+  height: 20px;
+  justify-content: center;
+  min-width: 20px;
+  padding: 0 5px;
+}
+
+.textplan-day-number {
+  align-self: flex-end;
+  color: inherit;
+  flex-shrink: 0;
+  font-size: var(--textplan-day-number-size);
+  font-weight: 600;
+}
+
+.textplan-day-todos {
+  display: flex;
+  /* flex: 1 让 clientHeight 等于剩余可用高度，折叠计算依赖这一点 */
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--textplan-todo-gap);
+  margin-top: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.textplan-day-todo {
+  color: var(--text-normal);
+  flex-shrink: 0;
+  font-size: var(--textplan-todo-size);
+  line-height: var(--textplan-todo-line-height);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.textplan-day-todo::before {
+  color: var(--textplan-accent);
+  content: "*";
+  margin-right: 4px;
+}
+
+/* 溢出折叠指示，点击冒泡到日期格按钮，行为与日期格一致 */
+.textplan-day-todo-more {
+  color: var(--textplan-muted);
+  font-weight: 600;
+}
+
+.textplan-day-todo-more::before {
+  content: none;
+}
+
+/* Editor decorations — strikethrough for completed tasks (ADR 0005: additive only) */
+.textplan-editor-done-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
+}
+
+/* Mode segmented control */
+.textplan-segment {
+  display: inline-flex;
+  background: var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.textplan-segment-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: inherit;
+  font-size: inherit;
+  height: 24px;
+  justify-content: center;
+  padding: 0 8px;
+  transition: background 120ms, color 120ms;
+}
+
+.textplan-segment-btn.is-active {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.textplan-segment-btn:hover:not(.is-active) {
+  color: var(--text-normal);
+}
+
+/* 纵向周布局：每天占满整行宽度，行高由 7 等分的网格决定 */
+.textplan-day--full-width {
+  min-height: 0;
+  width: 100%;
+}
+
+.textplan-day--full-width .textplan-day-number {
+  align-self: auto;
+}
+
+/* 纵向周视图没有列头，星期名与日期数字并排显示在格内 */
+.textplan-day-header {
+  align-items: baseline;
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.textplan-day-weekday {
+  color: var(--textplan-muted);
+  font-size: var(--textplan-todo-size);
+}
+

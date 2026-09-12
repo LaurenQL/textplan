@@ -1,0 +1,44 @@
+name: Release
+
+# Obsidian 按纯版本号 tag 拉取 Release，不带 v 前缀。
+# tag 由 `npm version <patch|minor|major>` 生成，见 docs/adr/0010-version-control-and-release.md
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build plugin
+        run: npm run build
+
+      # 三个文件必须平铺为 Release 附件，不能打成 zip：
+      # Obsidian 和 BRAT 直接按文件名下载。
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF#refs/tags/}" \
+            --title "${GITHUB_REF#refs/tags/}" \
+            --generate-notes \
+            main.js manifest.json styles.css
