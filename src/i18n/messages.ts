@@ -48,7 +48,40 @@ export type MessageKey =
   | "weekdayWednesday"
   | "weekdayThursday"
   | "weekdayFriday"
-  | "weekdaySaturday";
+  | "weekdaySaturday"
+  | "createNoteTitle"
+  | "createNoteBody"
+  | "createNotePath"
+  | "createNoteConfirm"
+  | "createNoteCancel"
+  | "settingsMissingNoteBehavior"
+  | "settingsMissingNoteBehaviorDesc"
+  | "settingsMissingNoteBehaviorCreate"
+  | "settingsMissingNoteBehaviorAsk"
+  | "settingsShowDateInTabTitle"
+  | "settingsShowDateInTabTitleDesc"
+  | "settingsHighlightActiveDailyNote"
+  | "settingsHighlightActiveDailyNoteDesc"
+  | "settingsTodoSection"
+  | "settingsCalendarSection"
+  | "settingsEventsSection"
+  | "settingsCustomAbandonedMarker"
+  | "settingsCustomAbandonedMarkerDesc"
+  | "settingsShowCalendarEvents"
+  | "settingsShowCalendarEventsDesc"
+  | "settingsIcsSources"
+  | "settingsIcsSourcesDesc"
+  | "settingsIcsSourceName"
+  | "settingsIcsSourceUrl"
+  | "settingsIcsSourceEnabled"
+  | "settingsIcsAddSource"
+  | "settingsIcsRemoveSource"
+  | "settingsIcsEmpty"
+  | "refreshCalendar"
+  | "allDay"
+  | "abandoned"
+  | "abandonTodo"
+  | "eventsFetchFailed";
 
 const messages: Record<Locale, Record<MessageKey, string>> = {
   zh: {
@@ -100,6 +133,39 @@ const messages: Record<Locale, Record<MessageKey, string>> = {
     weekdayThursday: "周四",
     weekdayFriday: "周五",
     weekdaySaturday: "周六",
+    createNoteTitle: "新建日记文件",
+    createNoteBody: "{date} 还没有对应的日记文件，是否新建？",
+    createNotePath: "将创建：{path}",
+    createNoteConfirm: "新建",
+    createNoteCancel: "取消",
+    settingsMissingNoteBehavior: "点击空白日期",
+    settingsMissingNoteBehaviorDesc: "点击日历中还没有日记文件的日期时的行为。",
+    settingsMissingNoteBehaviorCreate: "直接新建（默认）",
+    settingsMissingNoteBehaviorAsk: "先弹窗询问",
+    settingsShowDateInTabTitle: "在标签页显示日期",
+    settingsShowDateInTabTitleDesc: "打开今天的日记文件时，在笔记标签页标题后追加日期和星期。",
+    settingsHighlightActiveDailyNote: "跟随当前日记文件高亮",
+    settingsHighlightActiveDailyNoteDesc: "打开符合命名规则的日记文件时，日历自动切到并高亮该日期。",
+    settingsTodoSection: "Todo",
+    settingsCalendarSection: "日记文件",
+    settingsEventsSection: "日程订阅",
+    settingsCustomAbandonedMarker: "自定义放弃标记",
+    settingsCustomAbandonedMarkerDesc: "留空则使用「已完成标记 + x」，例如 ✓✓x。",
+    settingsShowCalendarEvents: "在日历中显示日程",
+    settingsShowCalendarEventsDesc: "只读展示 ICS 订阅中的日程，不写回订阅源。",
+    settingsIcsSources: "日历订阅源",
+    settingsIcsSourcesDesc: "支持 iCloud、飞书、Google Calendar 等公开的 ICS 订阅链接。",
+    settingsIcsSourceName: "名称",
+    settingsIcsSourceUrl: "ICS 链接",
+    settingsIcsSourceEnabled: "启用",
+    settingsIcsAddSource: "添加订阅源",
+    settingsIcsRemoveSource: "删除",
+    settingsIcsEmpty: "还没有订阅源。",
+    refreshCalendar: "刷新日程",
+    allDay: "全天",
+    abandoned: "已放弃",
+    abandonTodo: "放弃 Todo",
+    eventsFetchFailed: "部分日程订阅拉取失败，正在显示缓存数据。",
   },
   en: {
     archive: "Archive",
@@ -150,6 +216,39 @@ const messages: Record<Locale, Record<MessageKey, string>> = {
     weekdayThursday: "Thursday",
     weekdayFriday: "Friday",
     weekdaySaturday: "Saturday",
+    createNoteTitle: "Create daily note",
+    createNoteBody: "No daily note exists for {date}. Create one?",
+    createNotePath: "Will create: {path}",
+    createNoteConfirm: "Create",
+    createNoteCancel: "Cancel",
+    settingsMissingNoteBehavior: "Clicking an empty date",
+    settingsMissingNoteBehaviorDesc: "What happens when you click a date that has no daily note yet.",
+    settingsMissingNoteBehaviorCreate: "Create immediately (default)",
+    settingsMissingNoteBehaviorAsk: "Ask first",
+    settingsShowDateInTabTitle: "Show date in tab title",
+    settingsShowDateInTabTitleDesc: "Append the date and weekday to the tab title when the note is a daily note.",
+    settingsHighlightActiveDailyNote: "Follow the active daily note",
+    settingsHighlightActiveDailyNoteDesc: "When a daily note matching the naming rules is opened, the calendar switches to and highlights that date.",
+    settingsTodoSection: "Todo",
+    settingsCalendarSection: "Daily notes",
+    settingsEventsSection: "Calendar subscriptions",
+    settingsCustomAbandonedMarker: "Custom abandoned marker",
+    settingsCustomAbandonedMarkerDesc: "Leave empty to use the done marker plus x, e.g. ✓✓x.",
+    settingsShowCalendarEvents: "Show events in the calendar",
+    settingsShowCalendarEventsDesc: "Read-only display of ICS subscriptions. Nothing is written back to the source.",
+    settingsIcsSources: "Calendar sources",
+    settingsIcsSourcesDesc: "Supports public ICS feeds from iCloud, Feishu, Google Calendar, and others.",
+    settingsIcsSourceName: "Name",
+    settingsIcsSourceUrl: "ICS URL",
+    settingsIcsSourceEnabled: "Enabled",
+    settingsIcsAddSource: "Add source",
+    settingsIcsRemoveSource: "Remove",
+    settingsIcsEmpty: "No sources yet.",
+    refreshCalendar: "Refresh events",
+    allDay: "All day",
+    abandoned: "Abandoned",
+    abandonTodo: "Abandon todo",
+    eventsFetchFailed: "Some calendar sources failed to load. Showing cached data.",
   },
 };
 

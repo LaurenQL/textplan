@@ -50,6 +50,8 @@ src/main.ts    插件生命周期和命令注册
 - Todo 状态切换（根据语法配置）。
 - 可选完成时间处理。
 - 将已完成 todo 归档到 `## Done`（跨语法模式兼容）。
+- 日记文件跨目录匹配（`dailyNoteMatch.ts`）。
+- ICS 文本解析（`ics.ts`），不含网络请求。
 
 Core API 应尽量写成纯函数，接收语法配置参数，便于单元测试，也方便未来独立版复用。
 
@@ -69,32 +71,80 @@ Core 层的 todo 解析、切换、归档函数均参数化，接受 `TodoSyntax
 ```typescript
 export type TodoSyntaxMode = "markdown" | "asterisk" | "custom";
 
+/** 任务状态：未完成 / 已完成 / 已放弃。 */
+export type TodoState = "open" | "done" | "abandoned";
+
 export interface TodoSyntaxConfig {
   mode: TodoSyntaxMode;
   customOpen?: string;
   customDone?: string;
+  customAbandoned?: string;
 }
 ```
 
 **解析函数** (`src/core/todo.ts`)：
 - `parseTodos(content, syntaxConfig)` 根据当前语法模式解析 todo
 - 内部根据 `mode` 分发到不同的解析逻辑
-- Markdown 模式：`- [ ]` / `- [x]`
-- 星号模式：`* todo` / `* ✓ todo` / `*[x] todo`（兼容旧版）
+- Markdown 模式：`- [ ]` / `- [x]` / `- [-]`
+- 星号模式：`* todo` / `* ✓ todo` / `* x todo` / `*[x] todo`（兼容旧版）
 - 自定义模式：用户自定义标记
+- 每条 todo 带 `state` 字段；`completed` 是 `state !== "open"` 的派生便利字段，判断「是否该归档」时不要用它（见下方三态模型）
 
 **切换函数** (`src/core/todoToggle.ts`)：
-- `toggleTodos(lines, syntaxConfig, options)` 根据当前语法模式切换 todo
+- `toggleTodoLines(content, startLine, endLine, options)` 根据当前语法模式切换 todo
 - 输出格式遵循当前语法规范
-- Markdown 模式：`- [ ]` ↔ `- [x]`
-- 星号模式：`* todo` ↔ `* ✓ todo`
-- 自定义模式：`customOpen` ↔ `customDone`
+- 切换是三态环：`open → done → abandoned → open`，由 `NEXT_STATE` 表驱动
+- Markdown 模式：`- [ ]` → `- [x]` → `- [-]`
+- 星号模式：`* todo` → `* ✓ todo` → `* x todo`
+- 自定义模式：`customOpen` → `customDone` → `customAbandoned`（未配置放弃标记时降级为 `- [-]`）
+- 切换到 `abandoned` 时移除 `@done(...)`：放弃不是完成，不记完成时间
 
 **归档函数** (`src/core/todoArchive.ts`)：
 - `archiveCompletedTodos(content, syntaxConfig)` 归档已完成任务
 - **跨模式识别**：使用 `parseCompletedTodoAnyMode()` 识别所有语法的已完成任务
 - 这样用户切换语法模式后，仍能归档旧语法的已完成任务
 - 移动到 `## Done` 时保持原始语法格式
+
+### 三态任务模型
+
+任务有三个状态，`open` / `done` / `abandoned`。`abandoned` 表示「决定不做了」，它和 `done` 在**显示**上同类（都弱化 + 删除线、都不进日历），在**归档**上不同类（只有 `done` 进 `## Done`）。
+
+这个区分容易在代码里写错，因为 `Todo.completed` 的定义是 `state !== "open"`：
+
+- 判断「要不要显示删除线」用 `completed` 是对的
+- 判断「要不要归档」必须用 `state === "done"`
+
+归档实现曾用 `todo.completed` 判定，结果把放弃任务一起归进了 `## Done`，与 PRD 6.4 冲突。现在归档只认 `state === "done"`，`tests/todoArchive.test.ts` 有四个测试锁住这个边界。
+
+日历筛选同理，`getOpenTodos()` 用的是 `state === "open"`，已完成和已放弃都不显示。
+
+### 日记文件跨目录匹配
+
+`dailyNoteMatch.ts` 解决「vault 里已经有别的插件建的日记，不要再建一份重复的」。
+
+`matchDailyNote(input)` 按三层顺序查找，先命中先用：
+
+1. 配置目录下的精确路径
+2. 配置目录下文件名一致的文件（比较时两边都去掉 `.md`）
+3. 其他目录下能用当前格式串反推出同一天的文件
+
+多个候选时按路径字母序取第一份作为主匹配，其余进 `alternatives`，保证同一天每次都打开同一份文件。
+
+接口需要同时传 `formatFileName`（格式化函数）和 `fileNameFormat`（原始格式串，如 `"YYYYMMDD"`）—— 第 3 层要把文件名反推成日期，用的是 `parseDateFromFileName(格式串, 文件名)`，传格式化后的结果（`"20260917"`）会因为串里没有 `YYYY`/`MM`/`DD` token 而永远返回 `null`。
+
+`parseDateFromFileName` 的 tokenizer 必须保留 token 之间的字面量分隔符：遍历 `MOMENT_TOKEN_PATTERN` 时用 `cursor` 记录位置，每次先把 `format.slice(cursor, match.index)` 转义追加进正则，否则 `YYYY-MM-DD` 会生成和 `YYYYMMDD` 完全相同的正则，带分隔符的文件名全部匹配失败。
+
+### ICS 解析
+
+`ics.ts` 只做文本解析，不发网络请求 —— 网络在适配层（`obsidian/icsClient.ts`），这样解析逻辑可以纯函数测试。
+
+`parseIcs(content, sourceName, windowStart, windowEnd)` 返回按日期键索引的事件表。关键规则：
+
+- 折行（CRLF + 空格续行）先合并再解析
+- 全天事件（`VALUE=DATE`）的 `DTEND` 按 RFC 5545 视为**排他**，带时刻事件的 `DTEND` 是包含性终点。两者算跨天天数的方式不同，由 `getSpanDays(start, end)` 区分：全天不加 1，带时刻加 1
+- 跨天事件在覆盖的每一天各展开一条，方便日历按天取用
+- `RRULE` 支持 DAILY / WEEKLY / MONTHLY / YEARLY 四种基础频率，含 `COUNT` / `UNTIL` / `EXDATE`；不支持的规则降级为只显示起始那一次，不丢事件
+- `MAX_OCCURRENCES` 和 `MAX_SPAN_DAYS` 兜住展开规模
 
 ### 归档的区块模型
 
@@ -129,8 +179,33 @@ export interface TodoSyntaxConfig {
 - **读取 Daily Notes / Periodic Notes 插件配置**（兼容模式）。
 - **从模板文件读取内容并应用到新建日记**（兼容模式）。
 - **检测默认快捷键冲突**并提示用户。
+- **拉取 ICS 订阅**（`icsClient.ts`），带缓存和失败降级。
+- **给 Markdown 标签页标题附加日期**（`tabTitle.ts`）。
 
 Vault 文件应通过 Obsidian API 处理，不直接使用 Node `fs`。
+
+### ICS 网络层
+
+`icsClient.ts` 负责拉取，解析交给 `core/ics.ts`。
+
+用 Obsidian 的 `requestUrl` 而不是 `fetch`：`requestUrl` 走主进程，不受渲染进程的 CORS 限制，而日历服务商的订阅地址基本都不带 CORS 头。
+
+- 缓存键是 `sourceId | url | 显示窗口`，TTL 15 分钟，避免频繁请求订阅地址
+- 只拉取当前显示窗口覆盖的范围（`getMonthWindow()` 前后各留一周余量）
+- 单个源拉取失败时沿用该源上一次的缓存结果，好过让日历突然空掉；失败的源名进 `errors` 交给 UI 提示
+- 设置变更后调用 `invalidate()` 清缓存强制重拉
+
+### 标签页标题装饰
+
+`tabTitle.ts` 给 `MarkdownView.prototype.getDisplayText` 包一层，在日记文件的标题后附加日期和星期。
+
+边界：只改标题文案，不碰编辑器内部 DOM，也不重写 Obsidian 原生编辑器 UI（AGENTS.md 产品约束）。
+
+- 用 `__textplanPatched` 标记避免重复包装（插件重载或别的插件已包过时不叠加）
+- `uninstall()` 把原型方法还原成原样，不留痕迹
+- 标题会频繁重算，所以判定日期只看文件名（`parseDateFromFileName`），不做 vault 查询
+- 兼容模式下格式串可能没被完全转换，退化到宽松的 `LOOSE_DATE_PATTERN` 解析
+- 如果标题里已含相同后缀（Periodic Notes 可能已加过），不重复追加
 
 ### 归档目标文件的解析
 
@@ -328,17 +403,28 @@ MVP 设置项：
 - **Todo 语法模式**（单选：Markdown 原生 / 星号 / 自定义，默认 Markdown 原生）
 - **自定义未完成标记**（仅自定义模式）
 - **自定义已完成标记**（仅自定义模式）
+- **自定义已放弃标记**（仅自定义模式，留空时降级为 `- [-]`）
 
 ### 日记设置
 - **日记目录**（默认 `textplan`，兼容模式下禁用）
 - **文件名格式**（默认 `YYYYMMDD.md`，兼容模式下禁用）
+- **缺失日记行为**（单选：直接新建 / 每次询问，默认直接新建）
+- **标签页标题显示日期**（默认开启）
+- **打开日记时高亮日历**（默认开启）
 
 ### 其他
 - **周起始日**（默认周日）
 - **完成时记录时间**（默认关闭）
 - **默认日历模式**（单选：月 / 周，默认月）
+- **周视图布局**（单选：纵向 / 横向，默认横向）
+
+### 外部日程
+- **显示外部日程**（默认开启）
+- **ICS 订阅源列表**（每项含名称、地址、启用开关，可增删）
 
 设置通过 `Plugin.loadData()` 和 `Plugin.saveData()` 存储。
+
+`migrateSettings(raw)` 负责把旧存档里缺失的字段补成默认值，避免升级后出现 `undefined`。新增设置项时必须同时更新 `DEFAULT_SETTINGS` 和这个迁移函数，嵌套对象（`todoSyntax`）和数组（`icsSources`）要单独处理，不能只靠顶层展开。
 
 ## 命令
 

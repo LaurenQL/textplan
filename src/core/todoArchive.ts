@@ -53,7 +53,8 @@ export function archiveCompletedTodos(content: string, syntaxConfig: TodoSyntaxC
       todo = parseCompletedTodoAnyMode(line, index, false);
     }
 
-    if (todo?.completed) {
+    // 只归档「已完成」。已放弃任务留在原位置 —— 放弃不是完成，不该进 Done 归档区（PRD 6.4）。
+    if (todo?.state === "done") {
       archivedLines.push(line);
       return;
     }

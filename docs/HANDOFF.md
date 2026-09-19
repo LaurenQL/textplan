@@ -41,6 +41,7 @@ TextPlan Obsidian 插件 MVP 已完成核心功能实现，包括多语法模式
   - 工具栏字体统一使用 Obsidian 界面字体和默认字号，并跟随语言显示（中文环境显示「今天」）
   - `CMD+SHIFT+A` 归档前强制刷盘，避免因编辑器防抖写盘导致的「归档 0 个」或结果被覆盖
 - **版本控制与发布流程（2026-09-12）**：仓库此前零提交，现已纳入 Git 并建立发布流水线。见下方「发布流程」一节和 [ADR 0010](adr/0010-version-control-and-release.md)
+- **第三迭代（2026-09-19）**：三态任务模型（`open / done / abandoned`）、跨插件日记复用 `matchDailyNote` 修复（elsewhere 分支 bug）、ICS 只读日历集成、缺失日记行为（`missingNoteBehavior` 设置）、标签页标题装饰（`showDateInTabTitle`）、归档放弃任务 bug 修复
 
 当前验证：
 
@@ -242,13 +243,18 @@ Core 层：
 - `src/core/weekGrid.ts` - 周网格（第二迭代新增，已实现）
 
 Obsidian 适配层：
-- `src/obsidian/vaultStore.ts` - 兼容模式文件路径和模板处理
+- `src/obsidian/vaultStore.ts` - 兼容模式文件路径和模板处理，含 `matchDailyNote` 跨目录查找
 - `src/obsidian/dailyNotesCompat.ts` - Daily Notes 插件配置读取
 - `src/obsidian/editorCommands.ts` - 切换和归档命令的入口
 - `src/obsidian/workspace.ts` - leaf 创建和文件打开
 - `src/obsidian/todoClickExtension.ts` - 编辑器点击切换
-- `src/obsidian/todoDecorations.ts` - 编辑器装饰
+- `src/obsidian/todoDecorations.ts` - 编辑器装饰（含已放弃任务删除线）
 - `src/obsidian/textPlanEditorScope.ts` - 文件识别和编辑器类添加
+- `src/obsidian/icsClient.ts` - ICS 订阅拉取、缓存、失败降级（第三迭代新增）
+- `src/obsidian/tabTitle.ts` - 标签页标题日期装饰（第三迭代新增）
+
+UI：
+- `src/ui/CreateDailyNoteModal.ts` - 缺失日记确认 Modal（第三迭代新增，`missingNoteBehavior = "ask"` 时触发）
 
 设置：`src/settings/TextPlanSettingTab.ts`
 
@@ -256,20 +262,30 @@ Obsidian 适配层：
 
 ## 下一步
 
-第 10–16 项代码已全部完成。剩下 **第 17 项：在真实 Obsidian 中手动验证**（`docs/IMPLEMENTATION_PLAN.md` 第 17 节）：
+**第三迭代代码已全部完成，53 个测试全绿，`npm run build` 通过。**
 
+最优先：**在真实 Obsidian 中手动验证**（第 17 节验收清单仍适用，同时加验第三迭代新功能）：
+
+第二迭代验收（§10–16）：
 - 插件启用后 TextPlan 自动出现在左侧边栏
 - `CMD+SHIFT+T` 打开 TextPlan，冲突时有提示
 - 月/周切换正常，默认月视图；纵向和横向周布局都要看
-- 任务多时显示 `+x`，点击行为与日期格一致；拖动侧边栏宽度和窗口高度看 `+x` 是否重算
-- 上下滑动可跨周、跨月；纵向周视图内滚动不误触发切换
-- 已完成任务显示删除线，排版无回归（对照修改前截图）
+- 任务多时显示 `+x`，点击行为与日期格一致
+- 已完成任务显示删除线，排版无回归
 - 在任意 Markdown 文件上归档成功，无遗漏，`## Done` 后有空行
-- 移动端文案完整显示
+
+第三迭代验收：
+- 点击任务标记三态环：未完成 → 已完成 → 已放弃 → 未完成
+- 放弃任务显示删除线弱化，但 `CMD+SHIFT+A` 归档时**不**进入 `## Done`
+- 日历只显示未完成任务，已放弃不占位
+- 跨插件日记复用：vault 中已有其他目录的同日期日记时，点击日期打开已存在的文件而非新建
+- `missingNoteBehavior = "ask"` 时，点击日历弹出确认 Modal 而非直接创建
+- `showDateInTabTitle = true` 时，日记文件标签页显示日期而非文件名
+- ICS 设置里配置订阅地址后，日历格内显示日程事件（需有效的 .ics 地址）
 
 先按「测试 Vault」一节把 `main.js` / `manifest.json` / `styles.css` 拷进插件目录并 `Reload plugins`。
 
-另外有两件版本控制相关的收尾工作：
+版本控制收尾：
 
 1. **推送到 GitHub**（本地已有初始提交，remote 已配置好）：
 
@@ -279,7 +295,7 @@ Obsidian 适配层：
 
    推送后到 GitHub Actions 页确认 CI 首次运行通过。
 
-2. **端到端验证发版**（等第 17 项手动验证通过、决定发 0.1.1 时做）：`npm version patch` → `git push --follow-tags` → 确认 Release 产生且三个附件平铺可下载。
+2. **端到端验证发版**（等手动验收通过、决定发 0.1.1 时做）：`npm version patch` → `git push --follow-tags` → 确认 Release 产生且三个附件平铺可下载。
 
 ## 协作注意事项
 

@@ -1,4 +1,5 @@
 import { EditorView } from "@codemirror/view";
+import { parseTodoLine } from "../core/todo";
 import { toggleTodoLine } from "../core/todoToggle";
 import type { TextPlanSettings } from "../settings/types";
 
@@ -17,7 +18,7 @@ export function createTodoClickExtension(
       const line = view.state.doc.lineAt(position);
       const lineText = line.text;
       const settings = getSettings();
-      const markerRange = getClickableMarkerRange(lineText, settings.todoSyntax.mode);
+      const markerRange = getClickableMarkerRange(lineText, settings);
       if (!markerRange) {
         return false;
       }
@@ -51,25 +52,18 @@ export function createTodoClickExtension(
   });
 }
 
-function getClickableMarkerRange(line: string, mode: "markdown" | "asterisk" | "custom"): { from: number; to: number } | null {
-  if (mode === "markdown") {
-    const match = /^(\s*)-\s+\[[ xX]\]/.exec(line);
-    if (!match) {
-      return null;
-    }
-    const from = match[1].length;
-    return { from, to: match[0].length };
+/**
+ * 可点击的标记范围：从缩进结束到标记（含其后的空白）结束。
+ *
+ * 走 parseTodoLine 而不是自己写正则，这样三种语法模式（含自定义）以及新增的
+ * 已放弃标记都自动覆盖 —— 点击 `- [-]` / `* x ` / 自定义放弃标记同样能循环状态。
+ */
+function getClickableMarkerRange(line: string, settings: TextPlanSettings): { from: number; to: number } | null {
+  const todo = parseTodoLine(line, 0, false, settings.todoSyntax);
+  if (!todo) {
+    return null;
   }
-
-  if (mode === "asterisk") {
-    const match = /^(\s*)\*(?:\s*✓|\[x\])?/i.exec(line);
-    if (!match) {
-      return null;
-    }
-    const from = match[1].length;
-    return { from, to: match[0].length };
-  }
-
-  // 自定义模式暂不支持点击（需要用户提供的标记才能识别）
-  return null;
+  const markerStart = todo.indent.length;
+  const markerEnd = markerStart + todo.marker.length;
+  return { from: markerStart, to: markerEnd + 1 };
 }

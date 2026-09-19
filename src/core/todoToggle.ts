@@ -1,5 +1,5 @@
-import type { TodoSyntaxConfig } from "../settings/types";
-import { detectLineEnding, hasTrailingLineEnding, joinLines, parseTodoLine, splitLines } from "./todo";
+import type { TodoState, TodoSyntaxConfig } from "../settings/types";
+import { getCustomAbandonedMarker, detectLineEnding, hasTrailingLineEnding, joinLines, parseTodoLine, splitLines } from "./todo";
 
 export interface ToggleTodoOptions {
   recordCompletionTime: boolean;
@@ -7,17 +7,20 @@ export interface ToggleTodoOptions {
   syntaxConfig: TodoSyntaxConfig;
 }
 
+/** 点击和 CMD+D 的状态环：未完成 → 已完成 → 已放弃 → 未完成。 */
+const NEXT_STATE: Record<TodoState, TodoState> = {
+  open: "done",
+  done: "abandoned",
+  abandoned: "open",
+};
+
 export function toggleTodoLine(line: string, options: ToggleTodoOptions): string {
   const todo = parseTodoLine(line, 0, false, options.syntaxConfig);
   if (!todo) {
     return line;
   }
 
-  if (todo.completed) {
-    return formatOpenTodo(todo.indent, removeDoneStamp(todo.text), options.syntaxConfig);
-  }
-
-  return formatDoneTodo(todo.indent, appendDoneStamp(todo.text, options), options.syntaxConfig);
+  return formatTodo(todo.indent, todo.text, NEXT_STATE[todo.state], options);
 }
 
 export function toggleTodoLines(
@@ -37,6 +40,24 @@ export function toggleTodoLines(
   }
 
   return joinLines(lines, lineEnding, trailingLineEnding);
+}
+
+/** 把一行改写成指定状态。放弃任务不带 @done 时间戳。 */
+export function formatTodo(
+  indent: string,
+  text: string,
+  state: TodoState,
+  options: ToggleTodoOptions,
+): string {
+  if (state === "open") {
+    return formatOpenTodo(indent, removeDoneStamp(text), options.syntaxConfig);
+  }
+
+  if (state === "abandoned") {
+    return formatAbandonedTodo(indent, removeDoneStamp(text), options.syntaxConfig);
+  }
+
+  return formatDoneTodo(indent, appendDoneStamp(text, options), options.syntaxConfig);
 }
 
 function formatOpenTodo(indent: string, text: string, syntaxConfig: TodoSyntaxConfig): string {
@@ -69,6 +90,25 @@ function formatDoneTodo(indent: string, text: string, syntaxConfig: TodoSyntaxCo
   }
 
   return `${indent}- [x] ${text}`;
+}
+
+function formatAbandonedTodo(indent: string, text: string, syntaxConfig: TodoSyntaxConfig): string {
+  if (syntaxConfig.mode === "markdown") {
+    return `${indent}- [-] ${text}`;
+  }
+
+  if (syntaxConfig.mode === "asterisk") {
+    return `${indent}* x ${text}`;
+  }
+
+  if (syntaxConfig.mode === "custom") {
+    const marker = getCustomAbandonedMarker(syntaxConfig);
+    if (marker) {
+      return `${indent}${marker} ${text}`;
+    }
+  }
+
+  return `${indent}- [-] ${text}`;
 }
 
 function appendDoneStamp(text: string, options: ToggleTodoOptions): string {

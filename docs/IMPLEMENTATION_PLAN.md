@@ -312,3 +312,88 @@
 - push 后 GitHub Actions 首次运行通过。
 - 打一个真实 tag，确认 Release 产生且三个附件平铺可下载。
 
+# 第三迭代
+
+## 19. 三态任务模型、日记复用、ICS 日历、交互改进
+
+见 [ADR 0011](adr/0011-three-state-todo-model.md)、[ADR 0012](adr/0012-cross-plugin-daily-note-reuse.md)、[ADR 0013](adr/0013-ics-readonly-calendar.md)。
+
+### 19.1 三态任务模型
+
+- `Todo.state: "open" | "done" | "abandoned"` 三态；`completed` 保留为 `state !== "open"` 的派生布尔值（向后兼容装饰层）。
+- 切换环：`open → done → abandoned → open`，点击和 `CMD+D` 走同一路径。
+- 各语法模式放弃标记：星号模式 `* x todo`，Markdown 原生 `- [-] todo`，自定义模式未配置时降级为 `- [-]`。
+- 切换到放弃时移除 `@done(...)` 时间戳。
+- `todoArchive.ts` 归档条件改为 `state === "done"`，放弃任务留在原位置不进 `## Done`。
+- `todoDecorations.ts` 已放弃任务同已完成一样显示删除线 + 弱化，日历不显示放弃任务。
+- 新增 `tests/todoArchive.test.ts` 四条边界测试（星号放弃、Markdown 放弃、整篇只有放弃、跨语法模式放弃）。
+
+完成标准：
+
+- 三次点击任务标记完成一次完整循环，放弃标记语法正确。
+- `CMD+SHIFT+A` 归档后，放弃任务留在原位置，`## Done` 里不含放弃任务。
+- 日历只显示未完成任务，放弃任务不占日历格。
+
+### 19.2 跨插件日记文件复用
+
+- `src/core/dailyNoteMatch.ts` 新增 `matchDailyNote(input)`，三层查找：精确路径 → 配置目录同名文件 → 其他目录反推日期。
+- `MatchDailyNoteInput` 同时接收 `formatFileName`（格式化函数）和 `fileNameFormat`（原始格式串，如 `"YYYYMMDD"`），两者都必须传，理由见 ADR 0012 的「代价」一节。
+- 多候选按路径字母序取第一份为主匹配，其余记入 `alternatives`。
+- `vaultStore.ts` 调用时传入 `fileNameFormat: format`。
+- `tests/dailyNoteMatch.test.ts` 10 个用例，覆盖精确路径、同目录同名、跨目录反推、多候选排序、格式模式隔离。
+
+完成标准：
+
+- vault 中已有其他目录的同日期文件时，点击日期打开已有文件而非新建。
+- 换目录或格式后，历史文件仍可被找到。
+
+### 19.3 ICS 只读日历集成
+
+- `src/core/ics.ts`：纯文本解析，支持折行、全天/带时刻事件、UTC 换算、跨天展开、RRULE 四种基础频率（DAILY/WEEKLY/MONTHLY/YEARLY）含 COUNT/UNTIL/EXDATE，`MAX_OCCURRENCES = 400`，`MAX_SPAN_DAYS = 60`。
+- 全天事件 DTEND 按 RFC 5545 排他，带时刻事件 DTEND 包含，`getSpanDays(start, end)` 区分两者。
+- 不支持的 RRULE 降级为只显示起始一次，不丢弃事件。
+- `src/obsidian/icsClient.ts`：用 `requestUrl`（非 `fetch`）绕过 CORS，缓存 TTL 15 分钟，单源失败用上次缓存并上报失败源名。
+- 设置项 `icsSources: IcsSource[]`，每条含 `id / name / url / enabled`。
+- 日历格内显示 ICS 事件，参与 `+x` 溢出折叠，有单独样式区分 todo 与日程。
+- `tests/ics.test.ts` 9 个用例。
+
+完成标准：
+
+- 配置有效 .ics 地址后，事件出现在对应日期格。
+- 全天跨天事件在覆盖的每一天各显示一条，不多一天、不少一天。
+- 源拉取失败时不清空日历，提示失败源名。
+
+### 19.4 缺失日记行为（missingNoteBehavior）
+
+- `missingNoteBehavior: "create" | "ask"` 设置项，默认 `"create"`（与原有行为一致）。
+- `"ask"` 时，点击日历弹出 `src/ui/CreateDailyNoteModal.ts`，用户确认后创建，取消则不创建不报错。
+- Modal 文案进入 i18n，支持中英文。
+
+完成标准：
+
+- 默认模式行为无变化（直接创建）。
+- `"ask"` 模式弹出 Modal，取消后日历无变化。
+
+### 19.5 标签页标题日期装饰（showDateInTabTitle）
+
+- `showDateInTabTitle: boolean` 设置项，默认 `false`。
+- `src/obsidian/tabTitle.ts` 通过 patch `MarkdownView.prototype.getDisplayText` 实现，用 `__textplanPatched` 标志防止重复 patch，插件卸载时还原。
+- 只对被识别为 TextPlan 日记的文件生效，其余文件 fallback 到原始方法。
+
+完成标准：
+
+- 开启后，日记文件标签页显示日期（如 `2026-09-19`）而非文件名。
+- 关闭后恢复文件名显示。
+- 非日记文件标签页不受影响。
+
+### 19.6 验证（第三迭代）
+
+```bash
+npm test
+npm run build
+```
+
+- 53 个测试全绿（含第三迭代新增的 `dailyNoteMatch`、`ics`、`todoArchive` 三态边界用例）。
+- `npm run build` 无类型错误，无 esbuild 报错。
+- 手动在真实 Obsidian 中验证 §19.1–19.5 完成标准。
+

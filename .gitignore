@@ -1,6 +1,9 @@
 # 本地需求文档，不提交
 TextPlan PRD.md
 
+# 本地迭代记录，不提交
+ITERATION_LOG.md
+
 # 依赖
 node_modules/
 

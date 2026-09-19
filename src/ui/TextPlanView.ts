@@ -11,10 +11,12 @@ import {
   today,
   type PlainDate,
 } from "../core/date";
-import { TEXTPLAN_VIEW_TYPE } from "../constants";
+import { EVENT_TITLE_MAX_LENGTH, TEXTPLAN_VIEW_TYPE } from "../constants";
 import { createWeekGrid } from "../core/weekGrid";
 import { createMonthGrid, getWeekdayLabels } from "../core/monthGrid";
+import { dateKey, type CalendarEvent } from "../core/ics";
 import { getUnfinishedTodos } from "../core/todo";
+import { getMonthWindow } from "../obsidian/icsClient";
 import type { CalendarMode } from "../settings/types";
 import type TextPlanPlugin from "../main";
 
@@ -30,6 +32,10 @@ export class TextPlanView extends ItemView {
   private resizeObserver: ResizeObserver | null = null;
   /** 当前展示的月份（月模式）或所在周的任意一天（周模式）。一屏只展示这一个周期。 */
   private displayedDate: PlainDate = today();
+  /** 按日期键索引的日程，来自 ICS 订阅。空 Map 表示没有订阅或还没拉到。 */
+  private eventsByDate = new Map<string, CalendarEvent[]>();
+  private lastRefresh = 0;
+  private icsFailed = false;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: TextPlanPlugin) {
     super(leaf);
@@ -60,6 +66,13 @@ export class TextPlanView extends ItemView {
     this.disconnectObservers();
   }
 
+  /** 外部（打开日记文件时）要求把日历切到某一天。 */
+  async focusDate(date: PlainDate): Promise<void> {
+    this.selectedDate = date;
+    this.displayedDate = this.viewMode === "month" ? this.startOfMonth(date) : this.startOfWeek(date);
+    await this.render();
+  }
+
   private disconnectObservers(): void {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
@@ -69,12 +82,31 @@ export class TextPlanView extends ItemView {
     const container = this.containerEl.children[1] as HTMLElement;
     this.disconnectObservers();
     this.dayEntries = [];
+    await this.loadEvents();
     container.empty();
     container.addClass("textplan-view");
     this.renderToolbar(container);
     await this.renderCalendar(container);
     this.applyOverflowFolding();
     this.observeResize(container);
+  }
+
+  /** 只拉当前显示周期内的日程。失败时保留上一次的数据，不把日历清空。 */
+  private async loadEvents(): Promise<void> {
+    if (!this.plugin.settings.showCalendarEvents || this.plugin.settings.icsSources.length === 0) {
+      this.eventsByDate = new Map();
+      this.icsFailed = false;
+      return;
+    }
+
+    const window = this.viewMode === "month"
+      ? getMonthWindow(this.displayedDate)
+      : { start: this.startOfWeek(this.displayedDate), end: addDays(this.startOfWeek(this.displayedDate), 6) };
+
+    const result = await this.plugin.icsClient.fetchEvents(this.plugin.settings.icsSources, window.start, window.end);
+    this.eventsByDate = result.eventsByDate;
+    this.lastRefresh = result.fetchedAt;
+    this.icsFailed = result.errors.length > 0;
   }
 
   private renderToolbar(container: Element): void {
@@ -130,6 +162,20 @@ export class TextPlanView extends ItemView {
     });
     nextButton.setText("›");
     this.registerDomEvent(nextButton, "click", () => this.shiftPeriod(1));
+
+    // 有日历订阅时给一个手动刷新入口
+    if (this.plugin.settings.showCalendarEvents && this.plugin.settings.icsSources.length > 0) {
+      const refreshButton = controls.createEl("button", {
+        cls: "textplan-icon-button",
+        attr: { "aria-label": this.plugin.t("refreshCalendar"), title: this.plugin.t("refreshCalendar") },
+      });
+      refreshButton.setText("⟳");
+      if (this.icsFailed) refreshButton.addClass("is-warning");
+      this.registerDomEvent(refreshButton, "click", async () => {
+        this.plugin.icsClient.invalidate();
+        await this.render();
+      });
+    }
 
     const archiveButton = controls.createEl("button", { cls: "textplan-button" });
     archiveButton.setText(this.plugin.t("archive"));
@@ -226,8 +272,38 @@ export class TextPlanView extends ItemView {
       button.createDiv({ cls: "textplan-day-number", text: String(date.day) });
     }
 
+    this.renderEvents(button, date);
+
     const todoList = button.createDiv({ cls: "textplan-day-todos" }) as HTMLDivElement;
     return { dayEl: button, todoList };
+  }
+
+  /** 日程条目只读展示，排在 todo 之前，整体不参与 todo 的溢出折叠。 */
+  private renderEvents(button: HTMLElement, date: PlainDate): void {
+    const events = this.eventsByDate.get(dateKey(date));
+    if (!events || events.length === 0) {
+      return;
+    }
+
+    const list = button.createDiv({ cls: "textplan-day-events" });
+    for (const event of events) {
+      const item = list.createDiv({ cls: "textplan-day-event" });
+      const time = event.allDay ? "" : event.startTime;
+      if (time) {
+        item.createSpan({ cls: "textplan-day-event-time", text: time });
+      }
+      const title = event.summary.length > EVENT_TITLE_MAX_LENGTH
+        ? `${event.summary.slice(0, EVENT_TITLE_MAX_LENGTH - 1)}…`
+        : event.summary;
+      item.createSpan({ cls: "textplan-day-event-title", text: title });
+      const tooltip = [
+        event.summary,
+        event.location,
+        event.allDay ? this.plugin.t("allDay") : `${event.startTime}${event.endTime ? `–${event.endTime}` : ""}`,
+        event.sourceName,
+      ].filter((part) => part.length > 0).join("\n");
+      item.setAttr("title", tooltip);
+    }
   }
 
   private registerDayClick(dayEl: HTMLButtonElement, date: PlainDate): void {

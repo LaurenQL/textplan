@@ -82,4 +82,40 @@ describe("todo archive", () => {
     // the original Done entry should still be there
     expect(result.content).toContain("- [x] archived before");
   });
+
+  // 三态模型：放弃不是完成，不该进 Done 归档区（PRD 6.4）
+  it("放弃的星号任务留在原位置，不进 Done", () => {
+    const result = archiveCompletedTodos("* open\n* ✓ done\n* x abandoned", asteriskSyntax);
+
+    expect(result.archivedCount).toBe(1);
+    expect(result.content).toBe("* open\n* x abandoned\n\n## Done\n\n* ✓ done");
+  });
+
+  it("放弃的 Markdown 任务留在原位置，不进 Done", () => {
+    const result = archiveCompletedTodos("- [ ] open\n- [x] done\n- [-] abandoned", markdownSyntax);
+
+    expect(result.archivedCount).toBe(1);
+    expect(result.content).toBe("- [ ] open\n- [-] abandoned\n\n## Done\n\n- [x] done");
+  });
+
+  it("整篇只有放弃任务时，不创建 Done 区块", () => {
+    const content = "- [ ] open\n- [-] abandoned";
+    const result = archiveCompletedTodos(content, markdownSyntax);
+
+    expect(result.archivedCount).toBe(0);
+    expect(result.content).toBe(content);
+    expect(result.content).not.toContain("## Done");
+  });
+
+  it("跨语法模式下放弃任务同样不被归档", () => {
+    // markdown 模式里遇到星号语法的放弃任务，也不该归档
+    const result = archiveCompletedTodos("- [ ] open\n* x abandoned asterisk\n- [x] done", markdownSyntax);
+
+    expect(result.archivedCount).toBe(1);
+    expect(result.content).toContain("* x abandoned asterisk");
+    const lines = result.content.split("\n");
+    const doneIdx = lines.findIndex((line) => /##\s+done/i.test(line));
+    const abandonedIdx = lines.findIndex((line) => line.includes("abandoned asterisk"));
+    expect(abandonedIdx).toBeLessThan(doneIdx);
+  });
 });

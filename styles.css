@@ -280,3 +280,75 @@ body.is-phone .textplan-view {
   font-size: var(--textplan-todo-size);
 }
 
+
+/* 已放弃的任务：和已完成一样弱化 + 删除线，但不进 ## Done */
+.textplan-editor-line.is-textplan-abandoned {
+  opacity: 0.6;
+}
+
+/* 日历中的日程：只读，排在 todo 上方 */
+.textplan-day-events {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 1px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.textplan-day-event {
+  align-items: baseline;
+  color: var(--text-muted);
+  display: flex;
+  font-size: calc(var(--textplan-todo-size) - 1px);
+  gap: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.textplan-day-event-time {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.textplan-day-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 订阅拉取失败时的提示按钮 */
+.textplan-icon-button.is-warning {
+  color: var(--text-warning);
+}
+
+/* 新建日记确认弹窗 */
+.textplan-modal-path {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  word-break: break-all;
+}
+
+.textplan-modal-buttons .setting-item-control {
+  justify-content: flex-end;
+}
+
+/* 设置页：日历订阅源列表 */
+.textplan-ics-source .setting-item-control {
+  flex-wrap: nowrap;
+}
+
+.textplan-ics-name {
+  width: 10em;
+}
+
+.textplan-ics-url {
+  flex: 1 1 auto;
+  min-width: 16em;
+}
+
+.textplan-settings-empty {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
