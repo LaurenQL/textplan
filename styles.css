@@ -50,6 +50,22 @@ body.is-phone .textplan-view {
   white-space: nowrap;
 }
 
+.textplan-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.textplan-subtitle {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-weight: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .textplan-controls {
   align-items: center;
   display: flex;

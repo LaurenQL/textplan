@@ -28,6 +28,19 @@ export function formatChineseDate(date: PlainDate): string {
   return `${date.year}年${date.month}月${date.day}日 ${getWeekdayName(date, "zh")}`;
 }
 
+/**
+ * 简短日期 + 星期，用于工具栏副标题。
+ * zh: "9月19日 周六"  en: "Sep 19, Sat"
+ */
+export function formatShortDateWithWeekday(date: PlainDate, locale: "zh" | "en"): string {
+  const weekday = getWeekdayName(date, locale);
+  if (locale === "zh") {
+    return `${date.month}月${date.day}日 ${weekday}`;
+  }
+  const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${SHORT_MONTHS[date.month - 1]} ${date.day}, ${weekday}`;
+}
+
 /** 跟随语言的完整日期，用于 aria-label 和 tooltip。 */
 export function formatFullDate(date: PlainDate, locale: "zh" | "en"): string {
   if (locale === "zh") {

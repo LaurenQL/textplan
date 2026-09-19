@@ -4,6 +4,7 @@ import {
   addMonths,
   formatFullDate,
   formatMonthTitle,
+  formatShortDateWithWeekday,
   formatWeekRange,
   getWeekdayName,
   isSameDate,
@@ -111,8 +112,12 @@ export class TextPlanView extends ItemView {
 
   private renderToolbar(container: Element): void {
     const toolbar = container.createDiv({ cls: "textplan-toolbar" });
-    const title = toolbar.createDiv({ cls: "textplan-title" });
+    const titleGroup = toolbar.createDiv({ cls: "textplan-title-group" });
+    const title = titleGroup.createDiv({ cls: "textplan-title" });
     title.setText(this.formatTitle());
+    // 副标题：当前选中日期 + 星期几，让用户一眼知道今天是星期几
+    const subtitle = titleGroup.createDiv({ cls: "textplan-subtitle" });
+    subtitle.setText(formatShortDateWithWeekday(this.selectedDate, this.plugin.locale));
 
     const controls = toolbar.createDiv({ cls: "textplan-controls" });
     const modeSegment = controls.createDiv({ cls: "textplan-segment" });
