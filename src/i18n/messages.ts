@@ -31,7 +31,6 @@ export type MessageKey =
   | "archiveCompletedTodos"
   | "noActiveMarkdownFile"
   | "archivedCount"
-  | "hotkeyConflict"
   | "calendarModeMonth"
   | "calendarModeWeek"
   | "settingsDefaultCalendarMode"
@@ -115,7 +114,6 @@ const messages: Record<Locale, Record<MessageKey, string>> = {
     archiveCompletedTodos: "归档已完成 Todo",
     noActiveMarkdownFile: "没有活动的 Markdown 文件",
     archivedCount: "已归档 {count} 个 todo",
-    hotkeyConflict: "TextPlan: CMD+SHIFT+T 快捷键与其他命令冲突，已跳过注册。请在快捷键设置中手动绑定「打开 TextPlan」。",
     calendarModeMonth: "月",
     calendarModeWeek: "周",
     settingsDefaultCalendarMode: "默认日历模式",
@@ -198,7 +196,6 @@ const messages: Record<Locale, Record<MessageKey, string>> = {
     archiveCompletedTodos: "Archive completed todos",
     noActiveMarkdownFile: "No active Markdown file",
     archivedCount: "Archived {count} todo(s)",
-    hotkeyConflict: "TextPlan: CMD+SHIFT+T conflicts with another command. The default hotkey was skipped — please bind \"Open TextPlan\" manually in Hotkeys settings.",
     calendarModeMonth: "Month",
     calendarModeWeek: "Week",
     settingsDefaultCalendarMode: "Default calendar mode",

@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin, TFile } from "obsidian";
+import { MarkdownView, Plugin, TFile } from "obsidian";
 import { formatFullDate, formatIsoDate, isSameDate, today, type PlainDate } from "./core/date";
 import { detectLocale, createTranslator, type Locale, type MessageKey } from "./i18n/messages";
 import { archiveActiveMarkdownFile, toggleTodosInEditor } from "./obsidian/editorCommands";
@@ -243,10 +243,8 @@ export default class TextPlanPlugin extends Plugin {
         );
       });
 
-      if (conflict) {
-        new Notice(this.t("hotkeyConflict"), 8000);
-        return;
-      }
+      // 冲突时静默跳过默认快捷键注册，用户可在快捷键设置中手动绑定
+      if (conflict) return;
 
       hm.addDefaultHotkeys("textplan:open-textplan", [{ modifiers: ["Mod", "Shift"], key: "t" }]);
     }
