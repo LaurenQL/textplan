@@ -8,6 +8,9 @@
   --textplan-todo-size: 0.85em;
   --textplan-todo-line-height: 1.25;
   --textplan-todo-gap: 3px;
+  /* 工具栏只有这一套字号和控件高度，标题与按钮共用，不再各自继承 */
+  --textplan-toolbar-font-size: var(--font-ui-medium);
+  --textplan-toolbar-control-height: 28px;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -15,7 +18,8 @@
   overflow: hidden;
 }
 
-/* 移动端：更小字号和更紧凑行高，保证日期数字和任务文本完整显示 */
+/* 移动端：更小字号和更紧凑行高，保证日期数字和任务文本完整显示；
+   控件高度反过来放大，保证触屏可点 */
 body.is-mobile .textplan-view,
 body.is-phone .textplan-view {
   --textplan-day-padding: 4px;
@@ -23,6 +27,7 @@ body.is-phone .textplan-view {
   --textplan-todo-size: 0.7em;
   --textplan-todo-line-height: 1.15;
   --textplan-todo-gap: 1px;
+  --textplan-toolbar-control-height: 32px;
 }
 
 /* 手机上 7 列本来就窄：收紧格子间距和圆角，把宽度尽量留给任务文字 */
@@ -51,37 +56,23 @@ body.is-phone .textplan-toolbar {
   padding: 8px;
 }
 
-/* 触屏没有 hover，但需要可点的最小高度 */
-body.is-mobile .textplan-button,
-body.is-mobile .textplan-icon-button,
-body.is-phone .textplan-button,
-body.is-phone .textplan-icon-button {
-  height: 32px;
-}
-
-body.is-mobile .textplan-icon-button,
-body.is-phone .textplan-icon-button {
-  width: 32px;
-}
-
 .textplan-toolbar {
   align-items: center;
   border-bottom: 1px solid var(--textplan-border);
   display: flex;
+  /* 窄面板或英文长标签时换行，而不是把标题挤成省略号 */
+  flex-wrap: wrap;
+  font-family: var(--font-interface);
+  font-size: var(--textplan-toolbar-font-size);
   gap: 12px;
   justify-content: space-between;
   padding: 12px;
-}
-
-/* 工具栏内所有文字统一用 Obsidian 的 UI 字体和默认字号，不自定义大小 */
-.textplan-toolbar {
-  font-family: var(--font-interface);
-  font-size: var(--font-ui-medium);
+  row-gap: 8px;
 }
 
 .textplan-title {
   color: var(--text-normal);
-  font-size: inherit;
+  font-size: var(--textplan-toolbar-font-size);
   font-weight: var(--font-semibold, 600);
   min-width: 0;
   overflow: hidden;
@@ -98,6 +89,7 @@ body.is-phone .textplan-icon-button {
 
 .textplan-subtitle {
   color: var(--text-muted);
+  /* 副标题比主标题小一档是有意的层次关系，但仍由同一变量派生 */
   font-size: var(--font-ui-small);
   font-weight: normal;
   overflow: hidden;
@@ -112,6 +104,8 @@ body.is-phone .textplan-icon-button {
   gap: 6px;
 }
 
+/* 显式指定字号和高度：button 标签会被 Obsidian 的基础样式覆盖 font-size，
+   所以这里不用 inherit，直接引用工具栏变量，保证和标题一致 */
 .textplan-button,
 .textplan-icon-button {
   align-items: center;
@@ -122,18 +116,19 @@ body.is-phone .textplan-icon-button {
   cursor: pointer;
   display: inline-flex;
   font-family: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  height: 28px;
+  font-size: var(--textplan-toolbar-font-size);
+  font-weight: normal;
+  height: var(--textplan-toolbar-control-height);
   justify-content: center;
+  line-height: 1;
   padding: 0 10px;
 }
 
 .textplan-icon-button {
-  /* 箭头字形本身偏小，用行高而不是字号补偿，字号仍跟随工具栏 */
-  line-height: 1;
+  /* 箭头和刷新图标本身字形偏小，放大一档让视觉重量与相邻文字一致 */
+  font-size: calc(var(--textplan-toolbar-font-size) * 1.15);
   padding: 0;
-  width: 28px;
+  width: var(--textplan-toolbar-control-height);
 }
 
 .textplan-button:hover,
@@ -311,9 +306,11 @@ body.is-phone .textplan-icon-button {
   cursor: pointer;
   display: inline-flex;
   font-family: inherit;
-  font-size: inherit;
-  height: 24px;
+  font-size: var(--textplan-toolbar-font-size);
+  /* 外框有 2px 内边距，按钮自身高度减掉它，整组才与旁边普通按钮等高 */
+  height: calc(var(--textplan-toolbar-control-height) - 4px);
   justify-content: center;
+  line-height: 1;
   padding: 0 8px;
   transition: background 120ms, color 120ms;
 }
