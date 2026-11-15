@@ -11,6 +11,10 @@
   /* 工具栏只有这一套字号和控件高度，标题与按钮共用，不再各自继承 */
   --textplan-toolbar-font-size: var(--font-ui-medium);
   --textplan-toolbar-control-height: 28px;
+  /* 选中态用 Obsidian 自带的半透明选中色：它由主题按明暗分别定义，
+     不会出现写死浅紫导致夜间模式下浅字压浅底 */
+  --textplan-selected-bg: var(--text-selection, hsla(var(--interactive-accent-hsl), 0.2));
+  --textplan-selected-border: var(--interactive-accent);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -209,8 +213,10 @@ body.is-phone .textplan-toolbar {
 }
 
 .textplan-day.is-selected {
-  background: #ede9fe;
-  border-color: #a78bfa;
+  /* 用强调色与主题背景混合，而不是写死的浅紫：
+     夜间模式下文字是浅色，压在浅紫底上会完全看不清 */
+  background: var(--textplan-selected-bg);
+  border-color: var(--textplan-selected-border);
 }
 
 .textplan-day.is-today .textplan-day-number {
@@ -260,15 +266,16 @@ body.is-phone .textplan-toolbar {
   margin-right: 4px;
 }
 
-/* 已完成：整行弱化 + 删除线，与编辑器内的处理保持一致 */
+/* 已完成：整行弱化 + 删除线，与编辑器内的处理保持一致。
+   用 muted 而不是 faint —— faint 在夜间模式配合选中底色几乎看不见 */
 .textplan-day-todo.is-done {
-  color: var(--text-faint);
+  color: var(--textplan-muted);
   text-decoration: line-through;
-  text-decoration-color: var(--text-faint);
+  text-decoration-color: var(--textplan-muted);
 }
 
 .textplan-day-todo.is-done::before {
-  color: var(--text-faint);
+  color: var(--textplan-muted);
 }
 
 /* 溢出折叠指示，点击冒泡到日期格按钮，行为与日期格一致 */
