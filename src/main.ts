@@ -1,10 +1,11 @@
 import { MarkdownView, Plugin, TFile } from "obsidian";
-import { formatFullDate, formatIsoDate, isSameDate, today, type PlainDate } from "./core/date";
+import { formatFullDate, formatIsoDate, today, type PlainDate } from "./core/date";
 import { detectLocale, createTranslator, type Locale, type MessageKey } from "./i18n/messages";
 import { archiveActiveMarkdownFile, toggleTodosInEditor } from "./obsidian/editorCommands";
 import { createTodoDecorationExtension } from "./obsidian/todoDecorations";
 import { createTextPlanEditorClass } from "./obsidian/textPlanEditorScope";
 import { createTodoClickExtension } from "./obsidian/todoClickExtension";
+import { DatedTodoIndex } from "./obsidian/datedTodoIndex";
 import { IcsClient } from "./obsidian/icsClient";
 import { TabTitleDecorator } from "./obsidian/tabTitle";
 import { ensureTextPlanViewInLeftSidebar, openMarkdownFileBeside, openTextPlanView } from "./obsidian/workspace";
@@ -20,14 +21,14 @@ export default class TextPlanPlugin extends Plugin {
   settings: TextPlanSettings = migrateSettings(null);
   vaultStore!: VaultStore;
   icsClient!: IcsClient;
+  /** 日记里 `### 日期` 分组 todo 的跨文件索引。 */
+  datedTodoIndex!: DatedTodoIndex;
   locale: Locale = "en";
   t!: (key: MessageKey, values?: Record<string, string | number>) => string;
   activeDailyFile: TFile | null = null;
   lastActiveMarkdownFile: TFile | null = null;
 
   private tabTitles!: TabTitleDecorator;
-  /** 上一次触发高亮的日期，避免同一个文件反复重绘日历。 */
-  private lastHighlighted: PlainDate | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -35,6 +36,7 @@ export default class TextPlanPlugin extends Plugin {
     this.locale = detectLocale(window.localStorage.getItem("language") ?? navigator.language);
     this.t = createTranslator(this.locale);
     this.vaultStore = new VaultStore(this.app.vault, this.app);
+    this.datedTodoIndex = new DatedTodoIndex(this.app.vault, this.vaultStore);
     this.icsClient = new IcsClient();
     this.tabTitles = new TabTitleDecorator(this.app, this.vaultStore, () => this.settings, () => this.locale);
 
@@ -88,9 +90,14 @@ export default class TextPlanPlugin extends Plugin {
       },
     });
 
-    this.registerEvent(this.app.vault.on("modify", () => this.refreshViews()));
-    this.registerEvent(this.app.vault.on("create", () => this.refreshViews()));
-    this.registerEvent(this.app.vault.on("delete", () => this.refreshViews()));
+    const onVaultChange = (): void => {
+      this.datedTodoIndex.invalidate();
+      this.refreshViews();
+    };
+    this.registerEvent(this.app.vault.on("modify", onVaultChange));
+    this.registerEvent(this.app.vault.on("create", onVaultChange));
+    this.registerEvent(this.app.vault.on("delete", onVaultChange));
+    this.registerEvent(this.app.vault.on("rename", onVaultChange));
 
     // Track the most recently active Markdown file so archive can target it
     // even when focus has moved to the TextPlan calendar view. The same event
@@ -134,6 +141,10 @@ export default class TextPlanPlugin extends Plugin {
    */
   async openDailyNote(date: PlainDate): Promise<boolean> {
     const existing = this.vaultStore.findDailyNoteFile(this.settings, date);
+    if (!existing && this.settings.missingNoteBehavior === "none") {
+      // 「只选中，不新建」：日历已经通过 registerDayClick 更新过选中态，这里不动文件
+      return false;
+    }
     if (!existing && this.settings.missingNoteBehavior === "ask") {
       const confirmed = await this.askToCreateDailyNote(date);
       if (!confirmed) {
@@ -143,9 +154,35 @@ export default class TextPlanPlugin extends Plugin {
 
     const file = existing ?? (await this.vaultStore.createDailyNote(this.settings, date));
     this.activeDailyFile = file;
-    this.lastHighlighted = date;
     await openMarkdownFileBeside(this.app.workspace, file);
     return true;
+  }
+
+  /**
+   * 「今天」按钮。
+   *
+   * 兼容模式下优先走 Daily Notes / Periodic Notes 自己的命令，这样打开的是插件
+   * 按自己模板生成的文件，行为和用户给插件绑的快捷键完全一致；命令不存在或执行
+   * 失败时退回插件自身的创建逻辑。
+   */
+  async openToday(): Promise<void> {
+    if (this.settings.compatWithDailyNotes && this.runCompanionTodayCommand()) {
+      return;
+    }
+    await this.openDailyNote(today());
+  }
+
+  private runCompanionTodayCommand(): boolean {
+    const app = this.app as unknown as {
+      commands?: { commands?: Record<string, unknown>; executeCommandById?: (id: string) => boolean };
+    };
+    const registry = app.commands;
+    if (!registry?.commands || typeof registry.executeCommandById !== "function") {
+      return false;
+    }
+    const candidates = ["daily-notes", "periodic-notes:open-daily-note"];
+    const id = candidates.find((candidate) => candidate in (registry.commands as Record<string, unknown>));
+    return id ? registry.executeCommandById(id) : false;
   }
 
   async archiveActiveFile(): Promise<void> {
@@ -194,19 +231,15 @@ export default class TextPlanPlugin extends Plugin {
       return;
     }
     if (!file) {
-      this.lastHighlighted = null;
       return;
     }
 
     const date = this.getDateForFile(file);
     if (!date) {
-      this.lastHighlighted = null;
       return;
     }
-    if (this.lastHighlighted && isSameDate(this.lastHighlighted, date)) {
-      return;
-    }
-    this.lastHighlighted = date;
+    // 不缓存「上次高亮过哪天」——用户可能在日历里翻走了再点回同一个文件，
+    // 这时仍然需要把日历翻回来。是否重绘交给 view 自己判断。
     await this.focusCalendarOn(date);
   }
 

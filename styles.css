@@ -18,11 +18,50 @@
 /* 移动端：更小字号和更紧凑行高，保证日期数字和任务文本完整显示 */
 body.is-mobile .textplan-view,
 body.is-phone .textplan-view {
-  --textplan-day-padding: 5px;
-  --textplan-day-number-size: 0.85em;
-  --textplan-todo-size: 0.75em;
-  --textplan-todo-line-height: 1.2;
-  --textplan-todo-gap: 2px;
+  --textplan-day-padding: 4px;
+  --textplan-day-number-size: 0.8em;
+  --textplan-todo-size: 0.7em;
+  --textplan-todo-line-height: 1.15;
+  --textplan-todo-gap: 1px;
+}
+
+/* 手机上 7 列本来就窄：收紧格子间距和圆角，把宽度尽量留给任务文字 */
+body.is-mobile .textplan-calendar,
+body.is-phone .textplan-calendar {
+  gap: 2px;
+  padding: 2px;
+}
+
+body.is-mobile .textplan-day,
+body.is-phone .textplan-day {
+  border-radius: 4px;
+}
+
+/* 任务前的星号在小屏上占掉可观的横向空间，改为更短的缩进 */
+body.is-mobile .textplan-day-todo::before,
+body.is-phone .textplan-day-todo::before {
+  margin-right: 2px;
+}
+
+/* 工具栏按钮在窄屏会挤成一团，允许换行 */
+body.is-mobile .textplan-toolbar,
+body.is-phone .textplan-toolbar {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+}
+
+/* 触屏没有 hover，但需要可点的最小高度 */
+body.is-mobile .textplan-button,
+body.is-mobile .textplan-icon-button,
+body.is-phone .textplan-button,
+body.is-phone .textplan-icon-button {
+  height: 32px;
+}
+
+body.is-mobile .textplan-icon-button,
+body.is-phone .textplan-icon-button {
+  width: 32px;
 }
 
 .textplan-toolbar {
@@ -165,6 +204,11 @@ body.is-phone .textplan-view {
   background: var(--background-modifier-hover);
 }
 
+/* 有内容的格子：底色和空白格子区分开，一眼能看出哪天有安排 */
+.textplan-day.has-content {
+  background: var(--background-primary-alt);
+}
+
 .textplan-day.is-outside-month {
   color: var(--text-faint);
 }
@@ -219,6 +263,17 @@ body.is-phone .textplan-view {
   color: var(--textplan-accent);
   content: "*";
   margin-right: 4px;
+}
+
+/* 已完成：整行弱化 + 删除线，与编辑器内的处理保持一致 */
+.textplan-day-todo.is-done {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-faint);
+}
+
+.textplan-day-todo.is-done::before {
+  color: var(--text-faint);
 }
 
 /* 溢出折叠指示，点击冒泡到日期格按钮，行为与日期格一致 */

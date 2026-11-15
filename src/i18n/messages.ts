@@ -57,6 +57,7 @@ export type MessageKey =
   | "settingsMissingNoteBehaviorDesc"
   | "settingsMissingNoteBehaviorCreate"
   | "settingsMissingNoteBehaviorAsk"
+  | "settingsMissingNoteBehaviorNone"
   | "settingsShowDateInTabTitle"
   | "settingsShowDateInTabTitleDesc"
   | "settingsHighlightActiveDailyNote"
@@ -140,6 +141,7 @@ const messages: Record<Locale, Record<MessageKey, string>> = {
     settingsMissingNoteBehaviorDesc: "点击日历中还没有日记文件的日期时的行为。",
     settingsMissingNoteBehaviorCreate: "直接新建（默认）",
     settingsMissingNoteBehaviorAsk: "先弹窗询问",
+    settingsMissingNoteBehaviorNone: "只选中，不新建",
     settingsShowDateInTabTitle: "在标签页显示日期",
     settingsShowDateInTabTitleDesc: "打开今天的日记文件时，在笔记标签页标题后追加日期和星期。",
     settingsHighlightActiveDailyNote: "跟随当前日记文件高亮",
@@ -222,6 +224,7 @@ const messages: Record<Locale, Record<MessageKey, string>> = {
     settingsMissingNoteBehaviorDesc: "What happens when you click a date that has no daily note yet.",
     settingsMissingNoteBehaviorCreate: "Create immediately (default)",
     settingsMissingNoteBehaviorAsk: "Ask first",
+    settingsMissingNoteBehaviorNone: "Select only, don't create",
     settingsShowDateInTabTitle: "Show date in tab title",
     settingsShowDateInTabTitleDesc: "Append the date and weekday to the tab title when the note is a daily note.",
     settingsHighlightActiveDailyNote: "Follow the active daily note",

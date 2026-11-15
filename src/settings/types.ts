@@ -13,8 +13,8 @@ export interface TodoSyntaxConfig {
 export type CalendarMode = "month" | "week";
 export type WeekViewLayout = "vertical" | "horizontal";
 
-/** 点击日历空格子时的行为。 */
-export type MissingNoteBehavior = "create" | "ask";
+/** 点击日历空格子时的行为：直接新建 / 先询问 / 只选中不新建。 */
+export type MissingNoteBehavior = "create" | "ask" | "none";
 
 /** 日历事件订阅源。只读展示，不回写。 */
 export interface IcsSource {

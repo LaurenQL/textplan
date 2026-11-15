@@ -65,9 +65,10 @@ export class TextPlanSettingTab extends PluginSettingTab {
       .addDropdown((dropdown) => {
         dropdown.addOption("create", t("settingsMissingNoteBehaviorCreate"));
         dropdown.addOption("ask", t("settingsMissingNoteBehaviorAsk"));
+        dropdown.addOption("none", t("settingsMissingNoteBehaviorNone"));
         dropdown.setValue(settings.missingNoteBehavior);
         dropdown.onChange(async (value) => {
-          settings.missingNoteBehavior = value as "create" | "ask";
+          settings.missingNoteBehavior = value as "create" | "ask" | "none";
           await this.plugin.saveSettings();
         });
       });

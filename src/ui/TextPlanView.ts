@@ -3,6 +3,7 @@ import {
   addDays,
   addMonths,
   formatFullDate,
+  formatIsoDate,
   formatMonthTitle,
   formatShortDateWithWeekday,
   formatWeekRange,
@@ -16,14 +17,20 @@ import { EVENT_TITLE_MAX_LENGTH, TEXTPLAN_VIEW_TYPE } from "../constants";
 import { createWeekGrid } from "../core/weekGrid";
 import { createMonthGrid, getWeekdayLabels } from "../core/monthGrid";
 import { dateKey, type CalendarEvent } from "../core/ics";
-import { getUnfinishedTodos } from "../core/todo";
+import { getCalendarTodos, type ParsedTodo } from "../core/todo";
 import { getMonthWindow } from "../obsidian/icsClient";
-import type { CalendarMode } from "../settings/types";
+import type { CalendarMode, TodoState } from "../settings/types";
 import type TextPlanPlugin from "../main";
+
+/** 日历格里一行任务。已完成的任务仍然显示，但用弱化样式。 */
+interface TodoRow {
+  text: string;
+  state: TodoState;
+}
 
 interface DayEntry {
   todoList: HTMLDivElement;
-  todoTexts: string[];
+  rows: TodoRow[];
 }
 
 export class TextPlanView extends ItemView {
@@ -67,10 +74,25 @@ export class TextPlanView extends ItemView {
     this.disconnectObservers();
   }
 
-  /** 外部（打开日记文件时）要求把日历切到某一天。 */
+  /**
+   * 外部（打开日记文件时）要求把日历切到某一天。
+   *
+   * 已经选中且已经显示这一天时不重绘 —— 否则每次在编辑器里切换光标所在的
+   * 同一个文件都会触发整页重绘。
+   */
   async focusDate(date: PlainDate): Promise<void> {
+    const sameSelection = isSameDate(this.selectedDate, date);
+    const shownPeriod = this.viewMode === "month"
+      ? this.startOfMonth(date)
+      : this.startOfWeek(date);
+    const samePeriod = this.viewMode === "month"
+      ? isSameDate(this.startOfMonth(this.displayedDate), shownPeriod)
+      : isSameDate(this.startOfWeek(this.displayedDate), shownPeriod);
+    if (sameSelection && samePeriod) {
+      return;
+    }
     this.selectedDate = date;
-    this.displayedDate = this.viewMode === "month" ? this.startOfMonth(date) : this.startOfWeek(date);
+    this.displayedDate = shownPeriod;
     await this.render();
   }
 
@@ -83,6 +105,7 @@ export class TextPlanView extends ItemView {
     const container = this.containerEl.children[1] as HTMLElement;
     this.disconnectObservers();
     this.dayEntries = [];
+    await this.plugin.datedTodoIndex.refresh(this.plugin.settings);
     await this.loadEvents();
     container.empty();
     container.addClass("textplan-view");
@@ -157,7 +180,7 @@ export class TextPlanView extends ItemView {
     this.registerDomEvent(todayButton, "click", async () => {
       this.selectedDate = today();
       this.displayedDate = this.viewMode === "month" ? this.startOfMonth(this.selectedDate) : this.startOfWeek(this.selectedDate);
-      await this.plugin.openDailyNote(this.selectedDate);
+      await this.plugin.openToday();
       await this.render();
     });
 
@@ -226,7 +249,7 @@ export class TextPlanView extends ItemView {
       const { dayEl, todoList } = this.renderDayCell(calendar, cell.date, false);
       if (!cell.inCurrentMonth) dayEl.addClass("is-outside-month");
       this.registerDayClick(dayEl, cell.date);
-      await this.fillTodos(todoList, cell.date);
+      await this.fillTodos(dayEl, todoList, cell.date);
     }
   }
 
@@ -237,7 +260,7 @@ export class TextPlanView extends ItemView {
     for (const cell of createWeekGrid(this.startOfWeek(this.displayedDate), this.plugin.settings.weekStartDay)) {
       const { dayEl, todoList } = this.renderDayCell(calendar, cell.date, false);
       this.registerDayClick(dayEl, cell.date);
-      await this.fillTodos(todoList, cell.date);
+      await this.fillTodos(dayEl, todoList, cell.date);
     }
   }
 
@@ -247,7 +270,7 @@ export class TextPlanView extends ItemView {
     for (const cell of createWeekGrid(this.startOfWeek(this.displayedDate), this.plugin.settings.weekStartDay)) {
       const { dayEl, todoList } = this.renderDayCell(calendar, cell.date, true);
       this.registerDayClick(dayEl, cell.date);
-      await this.fillTodos(todoList, cell.date);
+      await this.fillTodos(dayEl, todoList, cell.date);
     }
   }
 
@@ -278,6 +301,9 @@ export class TextPlanView extends ItemView {
     }
 
     this.renderEvents(button, date);
+    if (this.eventsByDate.has(dateKey(date))) {
+      button.addClass("has-content");
+    }
 
     const todoList = button.createDiv({ cls: "textplan-day-todos" }) as HTMLDivElement;
     return { dayEl: button, todoList };
@@ -319,25 +345,48 @@ export class TextPlanView extends ItemView {
     });
   }
 
-  private async fillTodos(todoList: HTMLDivElement, date: PlainDate): Promise<void> {
-    const content = await this.plugin.vaultStore.readDailyNote(this.plugin.settings, date);
-    const todoTexts = getUnfinishedTodos(content, this.plugin.settings.todoSyntax).map((todo) => todo.text);
-    this.fillTodoList(todoList, todoTexts);
-    this.dayEntries.push({ todoList, todoTexts });
+  /**
+   * 收集某一天要显示的任务：本文件的 todo + 其他日记里用 `### 日期` 分组过来的
+   * todo。本文件里已经归到 `###` 日期标题下的行不重复出现在文件自己那一天。
+   */
+  private async fillTodos(dayEl: HTMLButtonElement, todoList: HTMLDivElement, date: PlainDate): Promise<void> {
+    const settings = this.plugin.settings;
+    const content = await this.plugin.vaultStore.readDailyNote(settings, date);
+    const file = this.plugin.vaultStore.findDailyNoteFile(settings, date);
+    const datedLines = file ? this.plugin.datedTodoIndex.getDatedLineNumbers(file) : new Set<number>();
+
+    const own = getCalendarTodos(content, settings.todoSyntax)
+      .filter((todo) => !datedLines.has(todo.lineNumber))
+      .map(toRow);
+    const dated = this.plugin.datedTodoIndex
+      .getTodosForDate(formatIsoDate(date))
+      .filter((todo) => todo.state !== "abandoned")
+      .map(toRow);
+
+    // 未完成排在已完成前面，同状态内保持文件顺序
+    const rows = [...own, ...dated].sort((a, b) => Number(a.state !== "open") - Number(b.state !== "open"));
+    this.fillTodoList(todoList, rows);
+    this.dayEntries.push({ todoList, rows });
+    if (rows.length > 0) {
+      dayEl.addClass("has-content");
+    }
   }
 
-  private fillTodoList(todoList: HTMLDivElement, texts: string[]): void {
+  private fillTodoList(todoList: HTMLDivElement, rows: TodoRow[]): void {
     todoList.empty();
-    texts.forEach((text) => {
+    rows.forEach((row) => {
       const item = todoList.createDiv({ cls: "textplan-day-todo" });
-      item.setText(text);
+      if (row.state === "done") {
+        item.addClass("is-done");
+      }
+      item.setText(row.text);
     });
   }
 
   private applyOverflowFolding(): void {
-    this.dayEntries.forEach(({ todoList, todoTexts }) => {
-      if (todoTexts.length === 0) return;
-      this.fillTodoList(todoList, todoTexts);
+    this.dayEntries.forEach(({ todoList, rows }) => {
+      if (rows.length === 0) return;
+      this.fillTodoList(todoList, rows);
       const firstItem = todoList.firstElementChild as HTMLElement | null;
       if (!firstItem) return;
       const itemHeight = firstItem.offsetHeight;
@@ -345,11 +394,11 @@ export class TextPlanView extends ItemView {
       const gap = parseFloat(getComputedStyle(todoList).rowGap) || 0;
       if (itemHeight <= 0 || available <= 0) return;
       const maxRows = Math.max(1, Math.floor((available + gap) / (itemHeight + gap)));
-      if (todoTexts.length <= maxRows) return;
+      if (rows.length <= maxRows) return;
       const shown = Math.max(0, maxRows - 1);
-      this.fillTodoList(todoList, todoTexts.slice(0, shown));
+      this.fillTodoList(todoList, rows.slice(0, shown));
       const more = todoList.createDiv({ cls: "textplan-day-todo textplan-day-todo-more" });
-      more.setText(`+${todoTexts.length - shown}`);
+      more.setText(`+${rows.length - shown}`);
     });
   }
 
@@ -368,4 +417,8 @@ export class TextPlanView extends ItemView {
     const offset = (weekday - this.plugin.settings.weekStartDay + 7) % 7;
     return addDays(date, -offset);
   }
+}
+
+function toRow(todo: ParsedTodo): TodoRow {
+  return { text: todo.text, state: todo.state };
 }

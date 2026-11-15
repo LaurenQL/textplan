@@ -224,6 +224,16 @@ export function getUnfinishedTodos(content: string, syntaxConfig: TodoSyntaxConf
   return parseTodos(content, syntaxConfig).filter((todo) => todo.state === "open" && !todo.inDoneSection);
 }
 
+/**
+ * 日历用：未完成 + 已完成，已放弃和 `## Done` 区块内的一律排除。
+ *
+ * 已完成的任务仍然返回，是为了让日历格能显示当天的完成情况 —— 由调用方把它渲染
+ * 成弱化样式。已放弃的任务既然放弃了，就不再占当天的位置。
+ */
+export function getCalendarTodos(content: string, syntaxConfig: TodoSyntaxConfig): ParsedTodo[] {
+  return parseTodos(content, syntaxConfig).filter((todo) => todo.state !== "abandoned" && !todo.inDoneSection);
+}
+
 export function splitLines(content: string): string[] {
   if (content.length === 0) {
     return [];
