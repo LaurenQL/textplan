@@ -2,7 +2,9 @@
 
 ## 项目
 
-TextPlan 是一个用于快速记录每日 todo 的 Obsidian 插件，数据存储在用户 vault 内的 Markdown 文件中。MVP 提供月历视图，并联动打开对应日期的日记文件。
+TextPlan 是一个用于快速记录每日 todo 的 Obsidian 插件，数据存储在用户 vault 内的 Markdown 文件中。日历视图提供月视图和周视图（纵向 / 横向两种布局），联动打开对应日期的日记文件，并可只读展示 ICS 订阅的外部日程。
+
+当前已发布 v0.1.1。功能边界和已知取舍见 `docs/HANDOFF.md`，产品规则见 `TextPlan PRD.md`。
 
 如果本地存在 `TextPlan PRD.md`，在规划产品行为前必须先阅读。该文件仅用于本地协作和需求梳理，不允许提交到 Git。
 
@@ -26,21 +28,25 @@ TextPlan 是一个用于快速记录每日 todo 的 Obsidian 插件，数据存�
 
 ## 产品约束
 
-- MVP 做成 Obsidian 插件。
+- 产品形态是 Obsidian 插件；独立版是未来方向，不是当前范围内的工作。
 - 通过隔离可复用核心逻辑，为未来独立版保留空间。
-- 使用左侧 TextPlan 月历 view 联动右侧 Obsidian Markdown leaf 的工作区形态。
+- 使用左侧 TextPlan 日历 view 联动右侧 Obsidian Markdown leaf 的工作区形态。
 - 不嵌入、不替换、不重写 Obsidian 原生 Markdown 编辑器内部 UI。
 - 日记文件以 Markdown 存储在用户 vault 中。
 - 默认日记目录是 `textplan`。
 - 默认文件名格式是 `YYYYMMDD.md`。
-- 默认 todo 语法是 `* todo`，完成后写成 `*[x] todo`。
-- 默认语法不应触发 Obsidian 原生 Markdown checkbox 渲染。
-- 默认语法在 Obsidian 编辑器中不应显示为 Markdown 无序列表圆点；应显示为 TextPlan 任务标记。
-- 已完成 TextPlan 任务应有弱化和删除线样式。
+- 默认 todo 语法是 Markdown 原生：`- [ ] todo` / `- [x] todo`。
+- 默认语法就是 Obsidian 原生 checkbox，会触发原生 Markdown checkbox 渲染，这是有意的。
+- 星号模式作为可选项保留：`* todo` 未完成、`* ✓ todo` 已完成、`* x todo` 已放弃；读取时兼容旧版 `*[x] todo`。
+- 自定义模式由用户定义开 / 完成 / 放弃三个标记。
+- 任务有**三种状态**：未完成 `open`、已完成 `done`、已放弃 `abandoned`。点击标记或 `CMD+D` 按 `open → done → abandoned → open` 循环。
+- 已完成和已放弃任务在编辑器里都显示为弱化 + 删除线。
+- 日历显示未完成和已完成任务（已完成的弱化 + 删除线），**不显示已放弃任务**。
 - 读取和切换时兼容未完成任务写法 `*todo`，但规范输出为 `* todo`。
-- Markdown checkbox 只作为任务归档兼容格式处理，不作为默认模式的月历任务或切换对象。
+- 支持 `### YYYY-MM-DD` 三级标题把一组 todo 归到指定日期（见 PRD 5.7、ADR 0014）。
 - 识别嵌套 todo。
-- 已完成 todo 在当前日记文件内归档到 `## Done`。
+- 已完成 todo 归档到 `## Done`（`## Done` 标题上下各留一个空行），已放弃任务不归档。
+- 归档作用于**任意 Markdown 文件**，不限于日记目录。
 
 ## 架构规则
 
@@ -63,9 +69,10 @@ src/
   main.ts
   constants.ts
   settings/
-  core/
-  obsidian/
-  ui/
+  core/        # 纯逻辑，不 import obsidian
+  obsidian/    # Obsidian API 适配层
+  ui/          # 视图渲染和 DOM 交互
+  i18n/        # 中英文案，跟随 Obsidian 语言
 tests/
 docs/
 ```
