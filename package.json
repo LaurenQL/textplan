@@ -1,6 +1,6 @@
 {
   "name": "textplan",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An Obsidian plugin for fast daily todo capture in plain Markdown files.",
   "main": "main.js",
   "scripts": {
@@ -27,4 +27,3 @@
     "vitest": "^2.1.8"
   }
 }
-
