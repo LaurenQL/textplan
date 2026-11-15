@@ -8,7 +8,7 @@ TextPlan 是一个用于快速记录每日 todo 的 Obsidian 插件。它基于�
 
 - **日历视图**：默认挂在左侧边栏，支持月视图和周视图切换；周视图提供纵向（默认，每天占满面板宽度）和横向（等同月视图一行）两种布局，可在设置中切换；清爽的白色背景，明确的格子分割线，选中日期高亮显示
 - **任务溢出折叠**：格子放不下时最后一行显示 `+x`，点击即可打开当天日记
-- **上下滑动**：在日历上滑动即可跨周、跨月
+- **整屏翻页**：窗口内始终完整展示一个月或一周，铺满可用高度，不出现滚动条；用工具栏的 ‹ › 按钮翻月或翻周
 - **多语法模式**：
   - **Markdown 原生**（默认）：`- [ ] todo` / `- [x] todo`
   - **星号模式**：`* todo` / `* ✓ todo`
@@ -92,6 +92,9 @@ TextPlan 目前处于早期开发阶段。第一个里程碑是 Obsidian 插件 
 - [ADR 0008：连续日历滚动（已废弃）](docs/adr/0008-continuous-calendar-scrolling.md)
 - [ADR 0009：日历分页与窗口占满](docs/adr/0009-paged-calendar-fill-viewport.md)
 - [ADR 0010：版本控制与发布流程](docs/adr/0010-version-control-and-release.md)
+- [ADR 0011：三态任务模型](docs/adr/0011-three-state-todo-model.md)
+- [ADR 0012：跨插件日记文件复用](docs/adr/0012-cross-plugin-daily-note-reuse.md)
+- [ADR 0013：ICS 只读日历集成](docs/adr/0013-ics-readonly-calendar.md)
 
 ---
 
@@ -103,7 +106,7 @@ TextPlan is an Obsidian plugin for fast daily todo capture in plain Markdown fil
 
 - **Calendar View**: Docked in the left sidebar by default, with switchable month and week modes; week view supports vertical (default, each day spans full panel width) and horizontal (equivalent to one row of month view) layouts, configurable in settings; clean white background, clear grid borders, highlighted selection
 - **Overflow Folding**: Shows `+x` on the last line when a cell runs out of room; click it to open that day's note
-- **Swipe Navigation**: Swipe up or down on the calendar to move across weeks and months
+- **Full-Period Paging**: A complete month or week is always shown in the window, filling the available height with no scrollbar; use the ‹ › toolbar buttons to page back or forward
 - **Multiple Syntax Modes**:
   - **Markdown Native** (default): `- [ ] todo` / `- [x] todo`
   - **Asterisk Mode**: `* todo` / `* ✓ todo`
@@ -187,3 +190,6 @@ TextPlan is in early development. The first milestone is the Obsidian plugin MVP
 - [ADR 0008: Continuous Calendar Scrolling (superseded)](docs/adr/0008-continuous-calendar-scrolling.md)
 - [ADR 0009: Paged Calendar Filling the Viewport](docs/adr/0009-paged-calendar-fill-viewport.md)
 - [ADR 0010: Version Control and Release Process](docs/adr/0010-version-control-and-release.md)
+- [ADR 0011: Three-State Todo Model](docs/adr/0011-three-state-todo-model.md)
+- [ADR 0012: Cross-Plugin Daily Note Reuse](docs/adr/0012-cross-plugin-daily-note-reuse.md)
+- [ADR 0013: ICS Read-Only Calendar Integration](docs/adr/0013-ics-readonly-calendar.md)
