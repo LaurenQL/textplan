@@ -95,6 +95,7 @@ TextPlan 目前处于早期开发阶段。第一个里程碑是 Obsidian 插件 
 - [ADR 0011：三态任务模型](docs/adr/0011-three-state-todo-model.md)
 - [ADR 0012：跨插件日记文件复用](docs/adr/0012-cross-plugin-daily-note-reuse.md)
 - [ADR 0013：ICS 只读日历集成](docs/adr/0013-ics-readonly-calendar.md)
+- [ADR 0014：按日期分组的 Todo](docs/adr/0014-dated-todo-sections.md)
 
 ---
 
@@ -193,3 +194,4 @@ TextPlan is in early development. The first milestone is the Obsidian plugin MVP
 - [ADR 0011: Three-State Todo Model](docs/adr/0011-three-state-todo-model.md)
 - [ADR 0012: Cross-Plugin Daily Note Reuse](docs/adr/0012-cross-plugin-daily-note-reuse.md)
 - [ADR 0013: ICS Read-Only Calendar Integration](docs/adr/0013-ics-readonly-calendar.md)
+- [ADR 0014: Dated Todo Sections](docs/adr/0014-dated-todo-sections.md)

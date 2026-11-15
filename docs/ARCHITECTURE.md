@@ -52,6 +52,7 @@ src/main.ts    插件生命周期和命令注册
 - 将已完成 todo 归档到 `## Done`（跨语法模式兼容）。
 - 日记文件跨目录匹配（`dailyNoteMatch.ts`）。
 - ICS 文本解析（`ics.ts`），不含网络请求。
+- 日期分组标题解析（`datedSection.ts`），把 `### YYYY-MM-DD` 下的 todo 归到对应日期。
 
 Core API 应尽量写成纯函数，接收语法配置参数，便于单元测试，也方便未来独立版复用。
 
@@ -107,7 +108,7 @@ export interface TodoSyntaxConfig {
 
 ### 三态任务模型
 
-任务有三个状态，`open` / `done` / `abandoned`。`abandoned` 表示「决定不做了」，它和 `done` 在**显示**上同类（都弱化 + 删除线、都不进日历），在**归档**上不同类（只有 `done` 进 `## Done`）。
+任务有三个状态，`open` / `done` / `abandoned`。`abandoned` 表示「决定不做了」，它和 `done` 在**编辑器显示**上同类（都弱化 + 删除线），在**日历显示**和**归档**上不同类：日历只排除 `abandoned`，`done` 会显示但做弱化；归档只认 `done`。
 
 这个区分容易在代码里写错，因为 `Todo.completed` 的定义是 `state !== "open"`：
 
@@ -116,7 +117,7 @@ export interface TodoSyntaxConfig {
 
 归档实现曾用 `todo.completed` 判定，结果把放弃任务一起归进了 `## Done`，与 PRD 6.4 冲突。现在归档只认 `state === "done"`，`tests/todoArchive.test.ts` 有四个测试锁住这个边界。
 
-日历筛选同理，`getOpenTodos()` 用的是 `state === "open"`，已完成和已放弃都不显示。
+日历筛选用的是 `getCalendarTodos()`，条件是 `state !== "abandoned"` 且不在 `## Done` 区块内：未完成和已完成都显示（已完成的在格子里弱化 + 删除线），已放弃不显示。排序时未完成排在已完成之前，同状态内保持文件顺序。
 
 ### 日记文件跨目录匹配
 
@@ -145,6 +146,25 @@ export interface TodoSyntaxConfig {
 - 跨天事件在覆盖的每一天各展开一条，方便日历按天取用
 - `RRULE` 支持 DAILY / WEEKLY / MONTHLY / YEARLY 四种基础频率，含 `COUNT` / `UNTIL` / `EXDATE`；不支持的规则降级为只显示起始那一次，不丢事件
 - `MAX_OCCURRENCES` 和 `MAX_SPAN_DAYS` 兜住展开规模
+
+### 日期分组解析
+
+`datedSection.ts` 解析日记里的 `### YYYY-MM-DD` 三级标题，把标题下的 todo 归到该日期。纯函数，不依赖 Obsidian。
+
+`parseDatedSections(content, syntaxConfig)` 返回两个东西：
+
+- `byDate` — 日期键（`YYYY-MM-DD`）到该日期下 todo 列表的映射
+- `lineNumbers` — 落在日期标题下的行号集合
+
+`lineNumbers` 是给调用方做**排除**用的：这些行已经归属到别的日期，渲染文件自身那天时必须跳过，否则同一个 todo 会在两个格子里各出现一次。
+
+边界规则：
+
+- 只认恰好三个 `#`，`##` 和 `####` 不生效 —— 宽松匹配会把 `### 会议记录 2026-11-20` 误判成日期
+- 遇到下一个任意级别标题（`#` 到 `######`）时当前分组结束
+- `## Done` 之后全部不参与分组
+- 标题下的普通文本不参与，只解析 todo 行
+- 畸形日期（`2026-11-20-extra`、`2026/11/20`）静默失效
 
 ### 归档的区块模型
 
@@ -181,8 +201,26 @@ export interface TodoSyntaxConfig {
 - **检测默认快捷键冲突**并提示用户。
 - **拉取 ICS 订阅**（`icsClient.ts`），带缓存和失败降级。
 - **给 Markdown 标签页标题附加日期**（`tabTitle.ts`）。
+- **维护日期分组索引**（`datedTodoIndex.ts`），跨文件汇总 `### YYYY-MM-DD` 下的 todo。
 
 Vault 文件应通过 Obsidian API 处理，不直接使用 Node `fs`。
+
+### 日期分组索引
+
+`datedTodoIndex.ts` 把 `core/datedSection.ts` 的解析结果跨文件汇总起来。
+
+日历每渲染一次都要拿到「某一天有哪些分组 todo」，而分组 todo 可能写在任意一篇日记里。因此需要扫全部日记文件，但不能每次都全量重读。
+
+缓存策略：
+
+- 按文件 `path` 缓存解析结果，附带 `mtime`
+- `refresh()` 时只重新解析 `mtime` 变过的文件
+- 文件删除时清掉对应缓存条目
+- vault 的 `modify` / `create` / `delete` / `rename` 事件调用 `invalidate()` 清空索引
+
+只扫能解析出日期的文件（复用 `VaultStore.getDateForFile`），避免把 vault 里的普通笔记也读一遍。
+
+同一天有多份文件都分组了 todo 时，按文件路径排序后拼接 —— `Map` 的遍历顺序不保证稳定，不排序会让每次渲染的顺序可能不同。
 
 ### ICS 网络层
 

@@ -42,6 +42,7 @@ TextPlan Obsidian 插件 MVP 已完成核心功能实现，包括多语法模式
   - `CMD+SHIFT+A` 归档前强制刷盘，避免因编辑器防抖写盘导致的「归档 0 个」或结果被覆盖
 - **版本控制与发布流程（2026-09-12）**：仓库此前零提交，现已纳入 Git 并建立发布流水线。见下方「发布流程」一节和 [ADR 0010](adr/0010-version-control-and-release.md)
 - **第三迭代（2026-09-19）**：三态任务模型（`open / done / abandoned`）、跨插件日记复用 `matchDailyNote` 修复（elsewhere 分支 bug）、ICS 只读日历集成、缺失日记行为（`missingNoteBehavior` 设置）、标签页标题装饰（`showDateInTabTitle`）、归档放弃任务 bug 修复
+- **第四迭代 v0.1.1（2026-11-15）**：日期格内容区分（`has-content` 底色 + 已完成弱化删除线）、日历筛选口径改为「排除 abandoned」、缺失日记行为新增「只选中不新建」、`openToday()` 兼容 Daily Notes / Periodic Notes 命令、日记高亮修复（删除 `lastHighlighted` 缓存）、`### YYYY-MM-DD` 日期分组 todo（新增 `datedSection.ts` 与 `datedTodoIndex.ts`）、移动端适配。详见 [ADR 0014](adr/0014-dated-todo-sections.md) 与实现计划 §20
 
 当前验证：
 
@@ -144,7 +145,7 @@ git push --follow-tags
 - `* ✓ todo` 是已完成任务
 - 读取时兼容旧版 `*[x] todo`
 - **编辑器内不做装饰改动**，保持 Obsidian 原生列表渲染
-- 月历只显示未完成 TextPlan todo
+- 月历显示未完成 TextPlan todo；已完成的也显示但弱化加删除线，已放弃不显示
 - 归档时移动到 `## Done` 下
 
 #### 自定义模式
@@ -262,9 +263,17 @@ UI：
 
 ## 下一步
 
-**第三迭代代码已全部完成，53 个测试全绿，`npm run build` 通过。**
+**v0.1.1 已发布（2026-11-15），59 个测试全绿，`npm run build` 通过，已部署到测试 vault。**
 
-最优先：**在真实 Obsidian 中手动验证**（第 17 节验收清单仍适用，同时加验第三迭代新功能）：
+最优先：**在真实 Obsidian 中手动验证**（第 17 节验收清单仍适用，同时加验第三、第四迭代新功能）：
+
+第四迭代验收（§20）：
+- 有内容的日期格底色与空白格不同；已完成任务在格子里弱化并带删除线
+- `missingNoteBehavior = "none"` 时点击空日期只高亮，不产生新文件
+- 兼容模式下点「今天」，打开的是 Daily Notes / Periodic Notes 生成的文件
+- 翻走日历后再点回同一个日记文件，日历仍能重新高亮
+- 在日记里写 `### 2026-11-20` 加 todo，该 todo 显示在 11 月 20 日格，不再出现在文件当天
+- 手机端月视图 6×7 完整显示，日期数字不被裁切
 
 第二迭代验收（§10–16）：
 - 插件启用后 TextPlan 自动出现在左侧边栏
@@ -277,7 +286,7 @@ UI：
 第三迭代验收：
 - 点击任务标记三态环：未完成 → 已完成 → 已放弃 → 未完成
 - 放弃任务显示删除线弱化，但 `CMD+SHIFT+A` 归档时**不**进入 `## Done`
-- 日历只显示未完成任务，已放弃不占位
+- 日历显示未完成与已完成任务（已完成弱化），已放弃不占位
 - 跨插件日记复用：vault 中已有其他目录的同日期日记时，点击日期打开已存在的文件而非新建
 - `missingNoteBehavior = "ask"` 时，点击日历弹出确认 Modal 而非直接创建
 - `showDateInTabTitle = true` 时，日记文件标签页显示日期而非文件名
