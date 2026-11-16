@@ -62,26 +62,18 @@ npm run build 成功
 
 测试 vault：
 
-```text
-/Users/lauren/Downloads/textpapertest
-```
-
-插件安装目录：
+测试 vault 与正式 vault 都放在本机，路径因人而异，这里用占位符表示：
 
 ```text
-/Users/lauren/Downloads/textpapertest/.obsidian/plugins/textplan
+<测试 vault 根目录>
+<测试 vault>/.obsidian/plugins/textplan
+<正式 vault 根目录>
 ```
 
-正式 vault：
-
-```text
-/Users/lauren/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian-iCloud
-```
-
-更新插件（以正式 vault 为例）：
+更新插件（把 `<vault>` 换成你的 vault 路径）：
 
 ```bash
-cp main.js manifest.json styles.css "/Users/lauren/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian-iCloud/.obsidian/plugins/textplan/"
+cp main.js manifest.json styles.css "<vault>/.obsidian/plugins/textplan/"
 ```
 
 安装后需要在 Obsidian 中执行 `Reload plugins`。
