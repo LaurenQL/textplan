@@ -10,54 +10,95 @@
   <img src="https://img.shields.io/badge/Obsidian-%E2%89%A5%201.5.0-7c3aed" alt="Obsidian 1.5.0+">
 </p>
 
-A daily todo plugin for Obsidian, built for people who are **busy and lazy**. Your data is your Markdown files — no database, no subscription, no account. Calendar on the left, notes on the right, click a cell to open that day.
+A daily todo plugin for Obsidian, built for people who are busy and a little lazy. Your todos live in the Markdown files already in your vault. No database, no sign-up. Calendar on the left, the day's note on the right, click a cell to jump there.
 
 ```md
 - [ ] Pay rent
 - [x] Buy milk
-- [-] Gym (skipped)
+- [-] Gym, skipping it
 ```
 
-## What it is
+## Why this exists
 
-TextPlan puts your day's todos into a calendar you can read at a glance. Click a day and you get that day's note; write `- [ ] task` in the note and it shows up in the calendar cell.
+I don't have that much to do each day, but I forget things a lot. I tried a few task apps. Most of them want you to create a project first, then tags, then walk through a setup flow. Setting up the structure eats all my patience and I'd abandon it within two days.
 
-No new format, no data lock-in. Stop using the plugin and your notes are still just notes.
+Obsidian already has daily notes. So I write todos in the note, and put a calendar next to them. No second app to open.
 
-## Features
+That's all TextPlan does: turns each day's note into a calendar you can look at. The notes stay as they are, and the syntax is still plain Markdown.
 
-- **Calendar view**: month and week modes (week has horizontal and vertical layouts). Always exactly one month or week on screen, filling the window height, never scrolling
-- **Content cells stand out**: a day with todos or events gets a deeper background
-- **Three-state todos**: open → done → abandoned, cycled by clicking the marker or pressing `CMD+D`. Done tasks are dimmed and struck through; abandoned tasks don't occupy a calendar slot
-- **Overflow folding**: when a cell runs out of room the last line shows `+x`; click it to open that day's note
-- **Dated sections**: write `### 2026-11-20` in a note and that group of todos shows up on 20 November — handy for planning days ahead
-- **External calendars**: add an ICS feed and events from Feishu, Google Calendar or iCloud appear next to your todos (read-only, nothing written back)
-- **Multiple syntax modes**: Markdown native (default), asterisk, or custom
-- **Daily Notes compatibility**: reuse the folder, filename format and templates from Daily Notes or Periodic Notes
-- **Global archive**: `CMD+SHIFT+A` collects completed tasks from any Markdown file into `## Done`
-- **Mobile and dark mode**: follows the Obsidian theme; text stays legible in either mode
+## Calendar
+
+Month view and week view. The window always shows exactly one month or one week, filling the height below the toolbar. No scrollbar. You page with the ‹ › buttons.
+
+Week view can be laid out horizontally or vertically. Horizontal looks like one row of the month view; vertical stacks the seven days, each spanning the full width, which reads better in a narrow sidebar.
+
+When a day has todos or events, its background deepens a little, so a busy week is obvious at a glance.
+
+## Tasks
+
+A task has three states. Click the marker, or press `CMD+D`, and it cycles open, done, abandoned. Both done and abandoned get struck through and dimmed. The difference shows up in archiving: abandoned tasks never move into `## Done`.
+
+The calendar shows open and done tasks. Abandoned ones stop taking up space.
+
+When a cell runs out of room, the last line becomes `+x`. Clicking it opens that day's note.
+
+The default syntax is Markdown native, meaning Obsidian's own checkbox.
+
+```md
+- [ ] open
+- [x] done
+- [-] abandoned
+```
+
+If you prefer, there's an asterisk mode.
+
+```md
+* open
+* ✓ done
+* x abandoned
+```
+
+Or define your own markers in settings, like `>>`, `>>✓`, `>>x`. Nested todos are recognised in every mode.
+
+## Scheduling a future day
+
+Todos in a note belong to that day by default. To plan something ahead, give a group its own date with a third-level heading.
+
+```md
+### 2026-11-20
+- [ ] Pay rent
+- [ ] Book dentist
+```
+
+These show up on 20 November instead of the day you wrote them, and they don't appear twice on the note's own day. The heading has to be exactly `### YYYY-MM-DD`, and the group ends at the next heading.
+
+## External calendars
+
+Paste an ICS URL in settings and events appear in the cells, read-only, next to your todos.
+
+Anything that gives you an ICS feed works. Feishu, Google Calendar, iCloud. Events never get written into your notes and can't be edited from here. TextPlan only displays them.
+
+Results are cached for 15 minutes. If a source fails, the last result stays on screen with a notice instead of the calendar going blank.
 
 ## Installation
 
-> Requires **Obsidian 1.5.0 or later**. Works on desktop and mobile.
+Needs Obsidian 1.5.0 or later, desktop or mobile. The community marketplace submission is still under review, so for now use one of the three options below.
 
-The community plugin marketplace submission is under review; once approved you'll be able to install it by searching inside Obsidian.
-
-### Option 1: BRAT (recommended, auto-updates)
+### BRAT, with auto-updates
 
 1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin
-2. In BRAT settings, choose "Add Beta plugin" and enter `LaurenQL/textplan`
+2. In BRAT settings choose "Add Beta plugin" and enter `LaurenQL/textplan`
 3. Enable TextPlan
 
-### Option 2: Command line (fastest)
+### Command line, fastest
 
-**macOS / Linux** — replace `/path/to/vault` with your vault path:
+On macOS or Linux, run this with your own vault path.
 
 ```bash
 mkdir -p "/path/to/vault/.obsidian/plugins/textplan" && cd "/path/to/vault/.obsidian/plugins/textplan" && for f in main.js manifest.json styles.css; do curl -fsSLO "https://github.com/LaurenQL/textplan/releases/latest/download/$f"; done
 ```
 
-**Windows PowerShell**:
+On Windows, use PowerShell and change the path first.
 
 ```powershell
 $dir = "$HOME\Documents\YourVault\.obsidian\plugins\textplan"
@@ -67,95 +108,52 @@ New-Item -ItemType Directory -Force -Path $dir | Out-Null
 }
 ```
 
-Then restart Obsidian and enable TextPlan under Settings → Community plugins.
+Restart Obsidian afterwards and enable the plugin under Settings → Community plugins.
 
-### Option 3: Manual download
+### Manual download
 
-Download `main.js`, `manifest.json` and `styles.css` from [Releases](https://github.com/LaurenQL/textplan/releases), put them in `<your vault>/.obsidian/plugins/textplan/`, restart Obsidian and enable the plugin.
+Grab `main.js`, `manifest.json` and `styles.css` from [Releases](https://github.com/LaurenQL/textplan/releases), drop them into `<your vault>/.obsidian/plugins/textplan/`, restart, enable.
 
-### Updating
+### Updating later
 
-- **BRAT**: click "Check for updates" in its settings, or let it check automatically
-- **Command line**: run the command above again, then restart Obsidian
-- **Manual**: overwrite the three files with the new ones and restart Obsidian
+With BRAT, hit "Check for updates" in its settings. With the command line, run the same command again. Manually, overwrite the three files. None of these require reconfiguring anything, and your notes and settings are left alone.
 
-Updating never touches your notes or resets your settings.
+## Shortcuts
 
-## Usage
+| Action | Keys |
+| --- | --- |
+| Open TextPlan | `CMD+SHIFT+T` |
+| Toggle task state | `CMD+D` |
+| Archive completed tasks | `CMD+SHIFT+A` |
 
-Once TextPlan is open:
-
-- **Click a calendar cell** — open or create that day (creates immediately by default; configurable to ask first, or to select without creating)
-- **Click a task marker or press `CMD+D`** — cycle the task state
-- **`CMD+SHIFT+T`** — open TextPlan
-- **`CMD+SHIFT+A`** — archive completed tasks
-
-> On Windows and Linux, use `Ctrl` in place of `CMD`.
-
-### Syntax
-
-**Markdown native (default)**
-
-```md
-- [ ] open
-- [x] done
-- [-] abandoned
-```
-
-**Asterisk mode**
-
-```md
-* open
-* ✓ done
-* x abandoned
-```
-
-**Custom mode**
-
-Define your own open / done / abandoned markers in settings, e.g. `>>` / `>>✓` / `>>x`.
-
-### Scheduling a future day
-
-```md
-### 2026-11-20
-- [ ] Pay rent
-- [ ] Book dentist
-```
-
-These todos appear on 20 November instead of the day you wrote them. The heading must be exactly `### YYYY-MM-DD`; the group ends at the next heading.
-
-### External calendars
-
-Add an ICS URL under "Calendar sources" in settings. Results are cached in-process for 15 minutes; if a source fails to load, the previous result is kept and the failure is surfaced rather than blanking the calendar.
-
-> Events are read-only: TextPlan never creates, edits or deletes external events, and never writes them into vault files.
+On Windows and Linux, use `Ctrl` instead of `CMD`.
 
 ## FAQ
 
-**Will it damage my notes?**
-No. TextPlan reads and writes your existing Markdown files through Obsidian's `Vault.process()` and adds no proprietary format. Your notes stay usable after you uninstall it.
+**Will it wreck my notes?**
+No. It reads and writes through Obsidian's `Vault.process()`, touches only the Markdown you wrote, and adds no proprietary format. Uninstall it and your notes open exactly as before.
 
-**Which daily note filenames are supported?**
-`YYYYMMDD.md` by default, configurable to `YYYY-MM-DD.md` and others; with compatibility mode it follows whatever Daily Notes / Periodic Notes is configured to use.
+**What filenames does it support?**
+`YYYYMMDD.md` by default, changeable to `YYYY-MM-DD.md` and so on. With compatibility mode it follows whatever Daily Notes or Periodic Notes is set to.
 
-**Why can't I see some tasks in the calendar?**
-Abandoned tasks (`- [-]` / `* x`) are hidden, as is anything inside the `## Done` section.
+**Why are some tasks missing from the calendar?**
+Abandoned tasks aren't shown, and neither is anything under `## Done`.
 
 **Text is hard to read in dark mode?**
-Fixed in v0.1.1 — all colours now follow theme variables. Update to the latest release if you're on an older build.
+That was fixed in 0.1.1, colours now follow the theme. Update if you're on an older build.
 
-**Does TextPlan make network requests?**
-No, unless you configure an ICS calendar feed yourself. The plugin collects no data and makes no outbound requests on its own.
+**Does it phone home?**
+Only if you add an ICS feed, in which case it fetches that URL. Otherwise it makes no requests and collects nothing.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
-- [Decision records (ADR)](docs/adr/) — 14 entries, each recording why a trade-off was made
+- [Decision records](docs/adr/), 14 entries, each explaining why a trade-off was made
 
 ## License
 
-[MIT](LICENSE). Use it, change it, ship it commercially — just keep the copyright notice.
+MIT. Use it, ship it commercially, just keep the copyright notice. Full text in [LICENSE](LICENSE).
 
 ## Development
 
@@ -165,19 +163,14 @@ npm test
 npm run build
 ```
 
-TypeScript + esbuild. The domain layer (`src/core`) has no Obsidian dependency, so it's unit-testable and reusable.
+TypeScript and esbuild. The domain layer sits in `src/core` with no Obsidian dependency, so it's testable on its own and reusable if this ever becomes a standalone app.
 
 ## About
 
-**Lauren** — building small tools that keep a day under control with as few actions as possible.
+Lauren, one person building this.
 
-- X: [Lauren_QL](https://x.com/Lauren_QL)
-- Jike: [Lauren](https://okjk.co/y9Z6lk)
-
-Ideas, bug reports, or just a note that this helped you — all welcome.
+Find me on X as [Lauren_QL](https://x.com/Lauren_QL) or on Jike as [Lauren](https://okjk.co/y9Z6lk). Bug reports, feature ideas, or just a note that it helped you are all welcome.
 
 ---
 
-<p align="center">
-  If TextPlan is useful to you, a ⭐ is the best encouragement.
-</p>
+If it's useful, a star tells me so.

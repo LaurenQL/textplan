@@ -10,54 +10,93 @@
   <img src="https://img.shields.io/badge/Obsidian-%E2%89%A5%201.5.0-7c3aed" alt="Obsidian 1.5.0+">
 </p>
 
-一个给 **又忙又懒的人** 用的 Obsidian 每日 todo 插件。数据就是你的 Markdown 文件，没有数据库、没有订阅、没有账号。左边日历，右边笔记，点一下格子就是那天。
+Obsidian 里的每日 todo 插件，给又忙又懒的人用。待办就写在你自己 vault 的 Markdown 文件里，插件不建数据库，也不要你注册账号。左边是日历，右边是当天笔记，点一下格子就跳过去。
 
 ```md
 - [ ] 交房租
 - [x] 买牛奶
-- [-] 健身房（不去了）
+- [-] 健身房，不去了
 ```
 
-## 是什么
+## 为什么做这个
 
-TextPlan 把「今天的待办」放进一个一目了然的月历里。点开某一天，就是当天的日记文件；在日记里写 `- [ ] 任务`，它就出现在日历格子上。
+我每天要做的事其实不多，但常常忘。看过一些任务管理工具，大多要求先建项目、再建标签、配置一遍流程，光是搭结构就耗掉耐心，用两天就丢在一边。
 
-不引入任何新格式，不锁数据。哪天不想用了，删掉插件，你的笔记还是你的笔记。
+Obsidian 里本来就有日记。那就顺手在日记里写待办，再给待办配一个日历看着，不用另外开一个应用。
 
-## 功能
+所以 TextPlan 只做一件事，把每天的日记铺成月历。日记还是原来的日记，语法还是原来的 Markdown。
 
-- **日历视图**：月视图 + 周视图（横向 / 纵向两种布局），一屏完整展示一个月或一周，铺满窗口高度，没有滚动条
-- **有内容的格子更醒目**：当天有 todo 或日程时格子底色加深
-- **三态任务**：未完成 → 已完成 → 已放弃，点标记或 `CMD+D` 循环切换；已完成的划线弱化显示，已放弃的不占日历位
-- **任务溢出折叠**：格子放不下时显示 `+x`，点它打开当天日记
-- **按日期分组**：在日记里写 `### 2026-11-20`，这一组 todo 就显示在 11 月 20 日，适合提前安排几天后的事
-- **外部日历**：添加 ICS 订阅地址，飞书 / Google Calendar / iCloud 的日程和 todo 一起显示在格子里（只读，不回写）
-- **多语法模式**：Markdown 原生（默认）/ 星号 / 自定义
-- **Daily Notes 兼容**：复用 Daily Notes 或 Periodic Notes 的目录、格式和模板
-- **全局归档**：`CMD+SHIFT+A` 把任意 Markdown 文件里的已完成任务收进 `## Done`
-- **移动端与夜间模式**：跟随 Obsidian 主题，任何模式下字都看得清
+## 日历
+
+月视图和周视图两种。窗口里永远完整显示一个月或者一周，铺满工具栏以下的高度，不会出现滚动条，靠工具栏的 ‹ › 翻页。
+
+周视图可以切成横向或纵向。横向跟月视图的一行一样，纵向是七天上下排开，每天占满宽度，侧边栏窄的时候文字更好读。
+
+格子里有 todo 或日程的时候，底色会深一点，哪天忙一眼能看出来。
+
+## 任务
+
+一条任务有三种状态。点标记，或者按 `CMD+D`，按「未完成 → 已完成 → 已放弃」循环。完成的和放弃都会划线弱化，区别在归档时，放弃的不会进 `## Done`。
+
+日历上只显示未完成和已完成两种，放弃的不再占位置。格子里放不下的任务，最后一行会变成 `+x`，点它打开当天日记。
+
+默认用 Markdown 原生语法，也就是 Obsidian 自己的 checkbox。
+
+```md
+- [ ] 未完成
+- [x] 已完成
+- [-] 已放弃
+```
+
+想换口味的话，星号模式长这样。
+
+```md
+* 未完成
+* ✓ 已完成
+* x 已放弃
+```
+
+都不合意就在设置里写自己的标记，比如 `>>`、`>>✓`、`>>x`。嵌套的 todo 在哪种模式下都认。
+
+## 提前安排某天的事
+
+日记里的 todo 默认属于当天。如果一件事要提前排，用三级标题给它指定日期，写成下面这样。
+
+```md
+### 2026-11-20
+- [ ] 交房租
+- [ ] 预约牙医
+```
+
+这一组会显示在 11 月 20 日，而不是你写它的那天，也不会重复出现在文件当天。标题必须写成 `### YYYY-MM-DD`，遇到下一个标题就结束。
+
+## 外部日程
+
+设置页里填一个 ICS 链接，日程就会以只读方式显示在格子里，和 todo 排在一起。
+
+飞书、Google Calendar、iCloud 这些能导出 ICS 订阅地址的服务都能用。日程不会写进你的笔记，也改不了，TextPlan 只负责显示。
+
+拉取结果缓存 15 分钟。某个源挂了会沿用它上次的结果并给出提示，不至于让日历突然空掉。
 
 ## 安装
 
-> 需要 **Obsidian 1.5.0 或更高版本**。桌面端和移动端都支持。
+需要 Obsidian 1.5.0 或以上，桌面端和移动端都行。社区插件市场还在审核，通过之后可以直接在 Obsidian 里搜到，现在先走下面三种。
 
-社区插件市场正在提交审核，通过后可以直接在 Obsidian 里搜索安装。
+### 用 BRAT，能自动更新
 
-### 方式一：BRAT（推荐，可自动更新）
-
-1. 安装 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件
-2. BRAT 设置里「Add Beta plugin」，填入 `LaurenQL/textplan`
+1. 装 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件
+2. BRAT 设置里选「Add Beta plugin」，填 `LaurenQL/textplan`
 3. 启用 TextPlan
 
-### 方式二：命令行（最快）
+### 用命令行，最快
 
-**macOS / Linux** —— 把 `/path/to/vault` 换成你的 vault 路径：
+macOS 或 Linux 用这条，把路径换成你自己的 vault 路径。
 
 ```bash
 mkdir -p "/path/to/vault/.obsidian/plugins/textplan" && cd "/path/to/vault/.obsidian/plugins/textplan" && for f in main.js manifest.json styles.css; do curl -fsSLO "https://github.com/LaurenQL/textplan/releases/latest/download/$f"; done
 ```
 
-**Windows PowerShell**：
+Windows 用 PowerShell，改一下路径再跑。
 
 ```powershell
 $dir = "$HOME\Documents\YourVault\.obsidian\plugins\textplan"
@@ -67,95 +106,52 @@ New-Item -ItemType Directory -Force -Path $dir | Out-Null
 }
 ```
 
-然后重启 Obsidian，在「设置 → 第三方插件」里启用 TextPlan。
+跑完重启 Obsidian，在「设置 → 第三方插件」里启用。
 
-### 方式三：手动下载
+### 手动下载
 
-从 [Releases](https://github.com/LaurenQL/textplan/releases) 下载 `main.js`、`manifest.json`、`styles.css`，放进 `<你的 vault>/.obsidian/plugins/textplan/`，重启 Obsidian 后启用。
+从 [Releases](https://github.com/LaurenQL/textplan/releases) 拿 `main.js`、`manifest.json`、`styles.css` 三个文件，丢进 `<你的 vault>/.obsidian/plugins/textplan/`，重启后启用。
 
-### 升级
+### 以后怎么更新
 
-- **BRAT**：设置里点「Check for updates」，或等它自动检查
-- **命令行**：把上面那条命令再跑一次，然后重启 Obsidian
-- **手动**：用新版本覆盖三个文件，重启 Obsidian
+BRAT 在设置里点「Check for updates」，命令行把上面那条再跑一遍，手动就用新文件覆盖旧的。三种方式都不要重新配置，你的笔记和设置都不会被动到。
 
-升级不会动你的笔记，也不会重置设置。
+## 快捷键
 
-## 用法
+| 操作 | 键 |
+| --- | --- |
+| 打开 TextPlan | `CMD+SHIFT+T` |
+| 切换任务状态 | `CMD+D` |
+| 归档已完成任务 | `CMD+SHIFT+A` |
 
-打开 TextPlan 后：
-
-- **点日历格子** —— 打开或创建那天（默认直接创建，可在设置里改成先询问，或只选中不新建）
-- **点任务标记或按 `CMD+D`** —— 切换任务状态
-- **`CMD+SHIFT+T`** —— 打开 TextPlan
-- **`CMD+SHIFT+A`** —— 归档已完成任务
-
-> Windows / Linux 用户把 `CMD` 换成 `Ctrl`。
-
-### 语法
-
-**Markdown 原生（默认）**
-
-```md
-- [ ] 未完成
-- [x] 已完成
-- [-] 已放弃
-```
-
-**星号模式**
-
-```md
-* 未完成
-* ✓ 已完成
-* x 已放弃
-```
-
-**自定义模式**
-
-在设置里定义自己的开 / 完成 / 放弃标记，例如 `>>` / `>>✓` / `>>x`。
-
-### 提前安排某天的事
-
-```md
-### 2026-11-20
-- [ ] 交房租
-- [ ] 预约牙医
-```
-
-这组 todo 会显示在 11 月 20 日，而不是你写它的那天。标题必须是 `### YYYY-MM-DD`，遇到下一个标题时分组结束。
-
-### 外部日历
-
-设置页「日程订阅源」里添加 ICS 链接即可。进程内缓存 15 分钟，拉取失败时沿用上次结果并提示，不会让日历突然空掉。
-
-> 日程只读：TextPlan 不创建、不修改、不删除任何外部事件，也不把它们写进 vault 文件。
+Windows 和 Linux 把 `CMD` 换成 `Ctrl`。
 
 ## 常见问题
 
-**会不会破坏我的笔记？**
-不会。TextPlan 只通过 Obsidian 的 `Vault.process()` 读写你已有的 Markdown 文件，不新增私有格式。卸载插件后笔记照常可用。
+**会把我的笔记改坏吗？**
+不会。读写都走 Obsidian 的 `Vault.process()`，只动你自己写的 Markdown，不引入私有格式。卸载之后笔记照常打开。
 
-**支持哪些日记文件命名？**
-默认 `YYYYMMDD.md`，可在设置里改成 `YYYY-MM-DD.md` 等；开启兼容模式后直接沿用 Daily Notes / Periodic Notes 的配置。
+**支持什么文件名？**
+默认 `YYYYMMDD.md`，可以改成 `YYYY-MM-DD.md` 之类。开了兼容模式就直接跟 Daily Notes 或 Periodic Notes 的配置走。
 
-**为什么日历里看不到某些任务？**
-已放弃的任务（`- [-]` / `* x`）不显示在日历里；`## Done` 区块内的内容也不会显示。
+**为什么有的任务不出现在日历里？**
+放弃的任务不显示，`## Done` 下面的内容也不显示。
 
-**夜间模式下字看不清？**
-v0.1.1 已修复，所有颜色跟随主题变量。如果你用的是旧版，更新到最新 Release。
+**夜间模式看不清字？**
+0.1.1 修过这个问题，颜色现在全部跟随主题。用的还是旧版就更新一下。
 
-**TextPlan 会联网吗？**
-不会，除非你自己配置了 ICS 日程订阅。插件本身不收集任何数据、不发起任何网络请求。
+**会联网吗？**
+只有你自己填了 ICS 订阅地址才会去拉取，其他时候不发任何请求，也不收集数据。
 
 ## 文档
 
 - [架构设计](docs/ARCHITECTURE.md)
 - [实现计划](docs/IMPLEMENTATION_PLAN.md)
-- [决策记录（ADR）](docs/adr/) —— 14 篇，记录每个关键取舍的原因
+- [决策记录 ADR](docs/adr/)，14 篇，每篇写清了当时为什么这么选
 
 ## 许可
 
-[MIT](LICENSE)。随便用、随便改、可以商用，保留版权声明即可。
+MIT。随便用，商用也行，保留版权声明就好，具体条文在 [LICENSE](LICENSE)。
 
 ## 开发
 
@@ -165,19 +161,14 @@ npm test
 npm run build
 ```
 
-插件是 TypeScript + esbuild，逻辑层（`src/core`）不依赖 Obsidian，可单独测试和复用。
+TypeScript 加 esbuild。逻辑层放在 `src/core`，不依赖 Obsidian，可以单独跑测试，以后想做成独立应用也能复用。
 
 ## 关于作者
 
-**Lauren** —— 在做一个「用最少动作管住每天」的小工具。
+Lauren，一个人在做这个插件。
 
-- X：[@@Lauren_QL](https://x.com/Lauren_QL)
-- 即刻：[Lauren](https://okjk.co/y9Z6lk)
-
-有想法、发现 bug，或者只是想说这个插件帮到你了，都欢迎来聊。
+X 上叫 [Lauren_QL](https://x.com/Lauren_QL)，即刻上也叫 [Lauren](https://okjk.co/y9Z6lk)。用着有问题，或者想加点什么，来这两个地方找我都行。
 
 ---
 
-<p align="center">
-  如果 TextPlan 对你有用，给个 ⭐ 是最好的鼓励。
-</p>
+用得上的话，点个 star 我会知道。
